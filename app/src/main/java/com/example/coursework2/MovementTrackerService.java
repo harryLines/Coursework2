@@ -2,8 +2,11 @@ package com.example.coursework2;
 
 import android.Manifest;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Handler;
 import android.os.IBinder;
@@ -30,7 +33,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
-public class MovementTrackerService extends Service {
+public class MovementTrackerService extends Service implements StepDetector.StepListener {
     public static final String ACTION_DISTANCE_UPDATE = "com.example.coursework2.ACTION_DISTANCE_UPDATE";
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
@@ -43,17 +46,50 @@ public class MovementTrackerService extends Service {
     private Handler timerHandler;
     private Runnable timerRunnable;
     private long elapsedMillis;
+    SensorManager sensorManager;
+    private StepDetector stepDetector;
+    Sensor accelerometerSensor;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("Location","Service Started");
+        Log.d("Location SRVC", "Service Started");
+
+        // Initialize sensorManager
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager == null) {
+            Log.e(TAG, "SensorManager is not available on this device");
+            // Handle the case when the SensorManager is not available
+            stopSelf(); // Stop the service if SensorManager is not available
+            return;
+        }
+
+        // Use the accelerometer sensor
+        accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if (accelerometerSensor == null) {
+            // Handle the case when the accelerometer sensor is not available on this device
+            Log.e(TAG, "Accelerometer sensor is not available on this device");
+            // You may stop the service or handle it according to your needs
+            stopSelf();
+            return;
+        }
+
+        // Initialize stepDetector before registering as a listener
+        stepDetector = new StepDetector(this);
+
+        // Register the sensor event listener
+        sensorManager.registerListener(stepDetector, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+
         initLocationUpdates();
         savedLocations = loadSavedLocations();
         startTimeMillis = System.currentTimeMillis();
         timerHandler = new Handler();
+        // Remove the following line since stepDetector is now initialized before this
+        // stepDetector = new StepDetector(this);
+
         initTimerRunnable();
     }
+
 
     private void initTimerRunnable() {
         timerRunnable = new Runnable() {
@@ -63,6 +99,18 @@ public class MovementTrackerService extends Service {
                 timerHandler.postDelayed(this, 1000); // Update every 1000 milliseconds (1 second)
             }
         };
+    }
+
+    @Override
+    public void onStepDetected(int stepCount) {
+        // This method is called when a step is detected
+        // You can perform actions based on the step count
+        Log.d(TAG, "Step count: " + stepCount);
+
+        // Broadcast the updated step count if needed
+        Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
+        intent.putExtra("stepCount", stepCount);
+        sendBroadcast(intent);
     }
 
     private void updateTimer() {
@@ -83,6 +131,7 @@ public class MovementTrackerService extends Service {
         movementType = intent.getIntExtra("movementType",-1);
         startTimeMillis = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
+
         return START_STICKY;
     }
 
@@ -92,6 +141,7 @@ public class MovementTrackerService extends Service {
         saveTripToFile();
         stopLocationUpdates();
         timerHandler.removeCallbacks(timerRunnable);
+        sensorManager.unregisterListener(stepDetector);
     }
 
     private void saveTripToFile() {
@@ -173,7 +223,7 @@ public class MovementTrackerService extends Service {
             totalDistance += distance;
 
             Log.d(TAG, "Distance Traveled: " + totalDistance + " meters");
-            sendDistanceAndTimerUpdateBroadcast(totalDistance,newLocation);
+            sendMovementUpdateBroadcast(totalDistance,newLocation);
         }
     }
 
@@ -197,7 +247,7 @@ public class MovementTrackerService extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private void sendDistanceAndTimerUpdateBroadcast(double distance, Location currentLocation) {
+    private void sendMovementUpdateBroadcast(double distance, Location currentLocation) {
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
 
         // Check if the user is close to a saved location
@@ -221,6 +271,8 @@ public class MovementTrackerService extends Service {
         // Add tracking duration to the intent
         long seconds = elapsedMillis / 1000;
         intent.putExtra("trackingDuration", seconds);
+
+        intent.putExtra("stepCount",stepDetector.getStepCount());
 
         sendBroadcast(intent);
     }

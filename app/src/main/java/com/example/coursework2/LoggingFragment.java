@@ -29,6 +29,8 @@ public class LoggingFragment extends Fragment {
     Button btnStartTracking;
     TextView textViewNearbySavedLocation;
     TextClock textClock;
+    TextView textViewSteps;
+    int steps = 0;
     public LoggingFragment() {
 
     }
@@ -46,6 +48,7 @@ public class LoggingFragment extends Fragment {
         movementTypeRadioBtnGroup = view.findViewById(R.id.trackingTypeGroup);
         textViewNearbySavedLocation = view.findViewById(R.id.txtViewNearbySavedLocation);
         textClock = view.findViewById(R.id.textClockElapsedTime);
+        textViewSteps = view.findViewById(R.id.textViewSteps);
 
         // Set a click listener for the button
         btnStartTracking.setOnClickListener(v -> {
@@ -136,20 +139,21 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
-    private BroadcastReceiver distanceAndTimerUpdateReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver movementUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MovementTrackerService.ACTION_DISTANCE_UPDATE)) {
                 double distance = intent.getDoubleExtra("distance", 0.0);
                 long seconds = intent.getLongExtra("trackingDuration", 0);
                 String savedLocationName = intent.getStringExtra("savedLocationName");
-
                 if (savedLocationName == null) {
                     textViewNearbySavedLocation.setText("You are not nearby any saved locations");
                 } else {
                     textViewNearbySavedLocation.setText("You are currently at: " + savedLocationName);
                 }
                 currentDistanceTxtView.setText(String.format(Locale.UK, "Distance: %.2f meters", distance));
+                steps = intent.getIntExtra("stepCount", steps);
+                textViewSteps.setText(String.valueOf(steps));
 
                 // Convert elapsed time to a custom format (hh:mm:ss)
                 String elapsedTime = formatElapsedTime(seconds);
@@ -171,14 +175,14 @@ public class LoggingFragment extends Fragment {
         super.onResume();
         // Register the BroadcastReceiver when the fragment is resumed
         IntentFilter filter = new IntentFilter(MovementTrackerService.ACTION_DISTANCE_UPDATE);
-        requireActivity().registerReceiver(distanceAndTimerUpdateReceiver, filter);
+        requireActivity().registerReceiver(movementUpdateReceiver, filter);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         // Unregister the BroadcastReceiver when the fragment is paused
-        requireActivity().unregisterReceiver(distanceAndTimerUpdateReceiver);
+        requireActivity().unregisterReceiver(movementUpdateReceiver);
     }
 
 }

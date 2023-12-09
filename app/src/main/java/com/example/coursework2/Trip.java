@@ -42,4 +42,12 @@ public class Trip {
     public void setDistance(double distance) {
         this.distance = distance;
     }
+
+    public long getTimeInSeconds() {
+        return timeInSeconds;
+    }
+
+    public void setTimeInSeconds(long timeInSeconds) {
+        this.timeInSeconds = timeInSeconds;
+    }
 }

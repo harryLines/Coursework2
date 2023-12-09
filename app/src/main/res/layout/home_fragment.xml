@@ -32,6 +32,24 @@
         android:layout_weight="10" />
 
     <TextView
+        android:id="@+id/textViewWalkingSpeed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Avergae Walking Speed:" />
+
+    <TextView
+        android:id="@+id/textViewRunningSpeed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Avergae Running Speed:" />
+
+    <TextView
+        android:id="@+id/textViewCyclingSpeed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Average Cycling Speed:" />
+
+    <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="0dp"

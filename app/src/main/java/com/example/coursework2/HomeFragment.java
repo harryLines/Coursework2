@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.RadioGroup;
 import android.widget.TextClock;
+import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 
@@ -30,6 +31,9 @@ public class HomeFragment extends Fragment {
     CheckBox checkboxWalking;
     CheckBox checkboxRunning;
     CheckBox checkboxCycling;
+    TextView txtViewAvgWalkSpeed;
+    TextView txtViewAvgRunSpeed;
+    TextView txtViewAvgCycleSpeed;
     public HomeFragment() {
     }
 
@@ -51,7 +55,7 @@ public class HomeFragment extends Fragment {
 
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                // Parse each line to create a Trip object
+                // Parse each line to create the Trip object
                 String[] parts = line.split(",");
                 if (parts.length == 4) {
                     int movementType = Integer.parseInt(parts[0].trim());
@@ -69,9 +73,29 @@ public class HomeFragment extends Fragment {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return tripHistory;
     }
+
+    private double calculateAverageSpeed(List<Trip> trips, int movementType) {
+        double totalSpeed = 0.0;
+        int count = 0;
+
+        for (Trip trip : trips) {
+            if (trip.getMovementType() == movementType) {
+                double distance = trip.getDistance();
+                long time = trip.getTimeInSeconds();
+
+                // Calculate speed (speed = distance / time)
+                double speed = (time > 0) ? (distance / time) : 0.0;
+
+                totalSpeed += speed;
+                count++;
+            }
+        }
+
+        return (count > 0) ? (totalSpeed / count) : 0.0;
+    }
+
 
     private Date parseDate(String dateString) {
         try {
@@ -90,6 +114,9 @@ public class HomeFragment extends Fragment {
         checkboxWalking = view.findViewById(R.id.checkBoxWalking);
         checkboxRunning = view.findViewById(R.id.checkBoxRunning);
         checkboxCycling = view.findViewById(R.id.checkBoxCycling);
+        txtViewAvgWalkSpeed = view.findViewById(R.id.textViewWalkingSpeed);
+        txtViewAvgRunSpeed = view.findViewById(R.id.textViewRunningSpeed);
+        txtViewAvgCycleSpeed = view.findViewById(R.id.textViewCyclingSpeed);
 
         // Load trip history data
         List<Trip> tripHistory = loadTripHistory();
@@ -145,6 +172,7 @@ public class HomeFragment extends Fragment {
 
         // Set the data to the WeeklyGraphView
         List<Date> dateListLastWeek = getDateListLastWeek(walkingTripsLastWeek);
+
 
         // Set the data to the WeeklyGraphView
         weeklyGraphView.setDataPoints(convertMapToList(walkingDistanceByDay), dateListLastWeek);
@@ -225,14 +253,37 @@ public class HomeFragment extends Fragment {
             }
         }
 
-        // Filter walking trips within the last week
+        // Filter trips within the last week
         List<Trip> selectedTripsLastWeek = filterTripsLastWeek(selectedTrips);
 
-        // Summarize distance for selected trips by day
+        // Summarize distance and time for selected trips by day
         Map<String, Double> distanceByDay = calculateDistanceByDay(selectedTripsLastWeek);
 
         // Set the data to the WeeklyGraphView
         List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
-        weeklyGraphView.setDataPoints(convertMapToList(distanceByDay), dateListLastWeek);
+        weeklyGraphView.setDataPoints(
+                convertMapToList(distanceByDay),
+                dateListLastWeek
+        );
+
+        // Calculate and set the average speed for each movement type
+        double avgWalkSpeed = calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_WALK);
+        double avgRunSpeed = calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_RUN);
+        double avgCycleSpeed = calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_CYCLE);
+
+        // Set the average speed values to TextViews
+        txtViewAvgWalkSpeed.setText((avgWalkSpeed > 0)
+                ? String.format(Locale.UK, "Avg Walk Speed: %.2f m/s", avgWalkSpeed)
+                : "No Walking Trips This Week");
+
+        txtViewAvgRunSpeed.setText((avgRunSpeed > 0)
+                ? String.format(Locale.UK, "Avg Run Speed: %.2f m/s", avgRunSpeed)
+                : "No Running Trips This Week");
+
+        txtViewAvgCycleSpeed.setText((avgCycleSpeed > 0)
+                ? String.format(Locale.UK, "Avg Cycle Speed: %.2f m/s", avgCycleSpeed)
+                : "No Cycling Trips This Week");
     }
+
+
 }
