@@ -6,8 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.RadioGroup;
-import android.widget.TextClock;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
@@ -57,16 +55,14 @@ public class HomeFragment extends Fragment {
             while ((line = bufferedReader.readLine()) != null) {
                 // Parse each line to create the Trip object
                 String[] parts = line.split(",");
-                if (parts.length == 4) {
                     int movementType = Integer.parseInt(parts[0].trim());
                     Date date = parseDate(parts[1].trim());
                     double distance = Double.parseDouble(parts[2].trim());
                     long time = Long.parseLong(parts[3].trim());
 
-                    Trip trip = new Trip(date, distance, movementType,time);
+                    Trip trip = new Trip(date, distance, movementType,time,null);
                     Log.d("TRIP LOAD", String.valueOf(trip.getDistance()));
                     tripHistory.add(trip);
-                }
             }
 
             bufferedReader.close();

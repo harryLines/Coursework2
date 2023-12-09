@@ -31,6 +31,9 @@ public class LoggingFragment extends Fragment {
     TextClock textClock;
     TextView textViewSteps;
     int steps = 0;
+    long seconds = 0;
+    double distance = 0.0;
+
     public LoggingFragment() {
 
     }
@@ -143,8 +146,8 @@ public class LoggingFragment extends Fragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MovementTrackerService.ACTION_DISTANCE_UPDATE)) {
-                double distance = intent.getDoubleExtra("distance", 0.0);
-                long seconds = intent.getLongExtra("trackingDuration", 0);
+                distance = intent.getDoubleExtra("distance", distance);
+                seconds = intent.getLongExtra("trackingDuration", seconds);
                 String savedLocationName = intent.getStringExtra("savedLocationName");
                 if (savedLocationName == null) {
                     textViewNearbySavedLocation.setText("You are not nearby any saved locations");

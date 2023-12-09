@@ -35,6 +35,7 @@ import java.util.Locale;
 
 public class MovementTrackerService extends Service implements StepDetector.StepListener {
     public static final String ACTION_DISTANCE_UPDATE = "com.example.coursework2.ACTION_DISTANCE_UPDATE";
+    private static final long MIN_LOCATION_UPDATE_INTERVAL = 60000;
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
     private FusedLocationProviderClient fusedLocationClient;
@@ -49,6 +50,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     SensorManager sensorManager;
     private StepDetector stepDetector;
     Sensor accelerometerSensor;
+    private List<LatLng> routePoints;
+    private long lastLocationPointTime;
 
     @Override
     public void onCreate() {
@@ -86,7 +89,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         timerHandler = new Handler();
         // Remove the following line since stepDetector is now initialized before this
         // stepDetector = new StepDetector(this);
-
+        routePoints = new ArrayList<>();
+        lastLocationPointTime = 0;
         initTimerRunnable();
     }
 
@@ -152,8 +156,19 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                         .format(Calendar.getInstance().getTime());
 
                 // Format the trip data
-                String tripData = String.format(Locale.UK, "%s,%s,%.2f,%s",
-                        movementType, dateTime, totalDistance,elapsedMillis/1000);
+                String tripData = String.format(Locale.UK, "%s,%s,%.2f,%s,[",
+                        movementType, dateTime, totalDistance, elapsedMillis / 1000);
+
+                // Append the route array to the file
+                for (LatLng latLng : routePoints) {
+                    tripData += String.format(Locale.UK, "(%.6f;%.6f)|", latLng.latitude, latLng.longitude);
+                }
+
+                // Remove the trailing comma and close the array
+                if (!routePoints.isEmpty()) {
+                    tripData = tripData.substring(0, tripData.length() - 1);
+                }
+                tripData += "]";
 
                 // Get the app's internal files directory
                 File directory = getApplicationContext().getFilesDir();
@@ -222,8 +237,16 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
             totalDistance += distance;
 
+            // Check if enough time has passed since the last route point
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastLocationPointTime >= MIN_LOCATION_UPDATE_INTERVAL) {
+                // Add the new LatLng point to the list
+                routePoints.add(new LatLng(newLocation.getLatitude(), newLocation.getLongitude()));
+                lastLocationPointTime = currentTime;
+            }
+
             Log.d(TAG, "Distance Traveled: " + totalDistance + " meters");
-            sendMovementUpdateBroadcast(totalDistance,newLocation);
+            sendMovementUpdateBroadcast(totalDistance, newLocation);
         }
     }
 

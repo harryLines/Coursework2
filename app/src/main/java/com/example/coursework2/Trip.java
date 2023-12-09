@@ -3,6 +3,7 @@ package com.example.coursework2;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Date;
+import java.util.List;
 
 public class Trip {
     private Date date;
@@ -12,11 +13,13 @@ public class Trip {
     public static final int MOVEMENT_RUN = 1;
     public static final int MOVEMENT_CYCLE = 2;
     private double distance;
-    public Trip(Date date, double distance,int movementType, long time) {
+    List<LatLng> route;
+    public Trip(Date date, double distance, int movementType, long time, List<LatLng> routePoints) {
         this.date = date;
         this.movementType = movementType;
         this.distance = distance;
         this.timeInSeconds = time;
+        this.route = routePoints;
     }
 
     public Date getDate() {
@@ -49,5 +52,9 @@ public class Trip {
 
     public void setTimeInSeconds(long timeInSeconds) {
         this.timeInSeconds = timeInSeconds;
+    }
+
+    public List<LatLng> getRoutePoints() {
+        return route;
     }
 }
