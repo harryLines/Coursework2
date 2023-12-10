@@ -65,7 +65,7 @@ public class LocationFragment extends Fragment {
 
         // Initialize RecyclerView and adapter
         savedLocations = loadSavedLocations(); // Implement this method to load data from the text file
-        savedLocationsAdapter = new SavedLocationsAdapter(savedLocations);
+        savedLocationsAdapter = new SavedLocationsAdapter(savedLocations,getContext());
         recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
 
@@ -119,6 +119,7 @@ public class LocationFragment extends Fragment {
                 Toast.makeText(requireContext(), "Please enter a location name", Toast.LENGTH_SHORT).show();
             }
         });
+
 
         // Set up the negative button (Cancel)
         builder.setNegativeButton("Cancel", (dialog, which) -> {
@@ -239,13 +240,23 @@ public class LocationFragment extends Fragment {
             while ((line = bufferedReader.readLine()) != null) {
                 // Split the line using the delimiter
                 String[] parts = line.split(",");
-                if (parts.length == 3) {
+                if (parts.length >= 3) {
                     String name = parts[0].trim();
                     double latitude = Double.parseDouble(parts[1].trim());
                     double longitude = Double.parseDouble(parts[2].trim());
 
+                    // Check if reminders are present in the line
+                    List<String> reminders = new ArrayList<>();
+                    if (parts.length > 3) {
+                        // Extract reminders
+                        for (int i = 3; i < parts.length; i++) {
+                            reminders.add(parts[i].trim());
+                        }
+                    }
+
                     LatLng latLng = new LatLng(latitude, longitude);
                     SavedLocation savedLocation = new SavedLocation(name, latLng);
+                    savedLocation.setReminders(reminders);
                     savedLocations.add(savedLocation);
                 }
             }
@@ -272,7 +283,7 @@ public class LocationFragment extends Fragment {
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
             // Format the location data and write it to the file
-            String locationString = String.format(Locale.UK, "%s,%.6f,%.6f",
+            String locationString = String.format(Locale.UK, "%s,%.6f,%.6f,%s",
                     newLocation.getName(), newLocation.getLatLng().latitude, newLocation.getLatLng().longitude);
 
             // Write the new location data to the file
@@ -284,5 +295,6 @@ public class LocationFragment extends Fragment {
             e.printStackTrace();
         }
     }
+
 
 }
