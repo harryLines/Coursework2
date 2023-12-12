@@ -273,6 +273,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private void sendMovementUpdateBroadcast(double distance, Location currentLocation) {
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
 
+        boolean foundCloseLocation = false;
+
         // Check if the user is close to a saved location
         for (SavedLocation savedLocation : savedLocations) {
             double savedLat = savedLocation.getLatLng().latitude;
@@ -281,12 +283,22 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             double distanceToSavedLocation = calculateHaversineDistance(
                     currentLocation.getLatitude(), currentLocation.getLongitude(),
                     savedLat, savedLng);
+
             Log.d("Distance", distanceToSavedLocation + "m away from " + savedLocation.getName());
+
             // You can adjust the radius (in meters) as needed
-            if (distanceToSavedLocation < 25) {
+            if (distanceToSavedLocation < 100) {
                 intent.putExtra("savedLocationName", savedLocation.getName());
+                intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
+                foundCloseLocation = true;
                 break; // Stop checking once a close location is found
             }
+        }
+
+        // If no close location is found, set the savedLocationName to "NULL"
+        if (!foundCloseLocation) {
+            intent.putExtra("savedLocationName", "NULL");
+            intent.putExtra("savedLocationReminders", "NULL"); // Set reminders to an empty string or handle accordingly
         }
 
         intent.putExtra("distance", distance);
@@ -295,10 +307,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         long seconds = elapsedMillis / 1000;
         intent.putExtra("trackingDuration", seconds);
 
-        intent.putExtra("stepCount",stepDetector.getStepCount());
-
+        intent.putExtra("stepCount", stepDetector.getStepCount());
         sendBroadcast(intent);
     }
+
 
 
     private List<SavedLocation> loadSavedLocations() {
@@ -320,15 +332,17 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 while ((line = bufferedReader.readLine()) != null) {
                     // Split the line using the delimiter
                     String[] parts = line.split(",");
-                    if (parts.length == 3) {
                         String name = parts[0].trim();
                         double latitude = Double.parseDouble(parts[1].trim());
                         double longitude = Double.parseDouble(parts[2].trim());
+                        List<String> reminders = new ArrayList<>();
+                        for (int i = 3; i < parts.length; i++) {
+                            reminders.add(parts[i].trim());
+                        }
 
                         LatLng latLng = new LatLng(latitude, longitude);
-                        SavedLocation savedLocation = new SavedLocation(name, latLng);
+                        SavedLocation savedLocation = new SavedLocation(name, latLng, reminders);
                         savedLocations.add(savedLocation);
-                    }
                 }
 
                 bufferedReader.close();

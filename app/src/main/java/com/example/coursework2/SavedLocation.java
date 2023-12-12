@@ -10,10 +10,14 @@ public class SavedLocation {
     private LatLng latLng;
     private List<String> reminders;
 
-    public SavedLocation(String name, LatLng latLng) {
+    public SavedLocation(String name, LatLng latLng,List<String> reminders) {
         this.name = name;
         this.latLng = latLng;
-        this.reminders = new ArrayList<>();
+        if(reminders == null) {
+            this.reminders = new ArrayList<>();
+        } else {
+            this.reminders = reminders;
+        }
     }
 
     public String getName() {

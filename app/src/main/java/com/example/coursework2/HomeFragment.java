@@ -32,6 +32,7 @@ public class HomeFragment extends Fragment {
     TextView txtViewAvgWalkSpeed;
     TextView txtViewAvgRunSpeed;
     TextView txtViewAvgCycleSpeed;
+    WeeklyGraphView weeklyGraphView;
     public HomeFragment() {
     }
 
@@ -118,15 +119,15 @@ public class HomeFragment extends Fragment {
         List<Trip> tripHistory = loadTripHistory();
 
         // Find the WeeklyGraphView in the layout
-        WeeklyGraphView weeklyGraphView = view.findViewById(R.id.weeklyGraphView);
+        weeklyGraphView = view.findViewById(R.id.weeklyGraphView);
 
         // Set a listener to handle checkbox selections
-        checkboxWalking.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(tripHistory, weeklyGraphView));
-        checkboxRunning.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(tripHistory, weeklyGraphView));
-        checkboxCycling.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(tripHistory, weeklyGraphView));
+        checkboxWalking.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(weeklyGraphView));
+        checkboxRunning.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(weeklyGraphView));
+        checkboxCycling.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(weeklyGraphView));
 
         // Initial update
-        updateGraph(tripHistory, weeklyGraphView);
+        updateGraph(weeklyGraphView);
 
         return view;
     }
@@ -150,28 +151,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
-        // Load the latest trip history
-        List<Trip> tripHistory = loadTripHistory();
-
-        // Filter walking trips
-        List<Trip> walkingTrips = filterWalkingTrips(tripHistory);
-
-        // Filter walking trips within the last week
-        List<Trip> walkingTripsLastWeek = filterTripsLastWeek(walkingTrips);
-
-        // Summarize distance for walking trips by day
-        Map<String, Double> walkingDistanceByDay = calculateDistanceByDay(walkingTripsLastWeek);
-
-        // Find the WeeklyGraphView in the layout
-        WeeklyGraphView weeklyGraphView = getView().findViewById(R.id.weeklyGraphView);
-
-        // Set the data to the WeeklyGraphView
-        List<Date> dateListLastWeek = getDateListLastWeek(walkingTripsLastWeek);
-
-
-        // Set the data to the WeeklyGraphView
-        weeklyGraphView.setDataPoints(convertMapToList(walkingDistanceByDay), dateListLastWeek);
+        updateGraph(weeklyGraphView);
     }
 
     private List<Trip> filterWalkingTrips(List<Trip> trips) {
@@ -223,9 +203,9 @@ public class HomeFragment extends Fragment {
         return sdf.format(date);
     }
 
-    private void updateGraph(List<Trip> tripHistory, WeeklyGraphView weeklyGraphView) {
+    private void updateGraph(WeeklyGraphView weeklyGraphView) {
         List<Trip> selectedTrips = new ArrayList<>();
-
+        List<Trip> tripHistory = loadTripHistory();
         // Find the selected checkboxes
 
         // Filter the trips based on checkbox selections
@@ -270,15 +250,15 @@ public class HomeFragment extends Fragment {
         // Set the average speed values to TextViews
         txtViewAvgWalkSpeed.setText((avgWalkSpeed > 0)
                 ? String.format(Locale.UK, "Avg Walk Speed: %.2f m/s", avgWalkSpeed)
-                : "No Walking Trips This Week");
+                : "");
 
         txtViewAvgRunSpeed.setText((avgRunSpeed > 0)
                 ? String.format(Locale.UK, "Avg Run Speed: %.2f m/s", avgRunSpeed)
-                : "No Running Trips This Week");
+                : "");
 
         txtViewAvgCycleSpeed.setText((avgCycleSpeed > 0)
                 ? String.format(Locale.UK, "Avg Cycle Speed: %.2f m/s", avgCycleSpeed)
-                : "No Cycling Trips This Week");
+                : "");
     }
 
 

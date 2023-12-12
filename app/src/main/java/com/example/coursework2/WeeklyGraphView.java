@@ -21,19 +21,23 @@ public class WeeklyGraphView extends View {
 
     private List<Float> dataPoints;
     private List<Date> dateList;
+    private int themeColor = Color.BLACK;
 
     public WeeklyGraphView(Context context) {
         super(context);
+        themeColor = ThemeManager.getAccentColor(getContext());
         init();
     }
 
     public WeeklyGraphView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        themeColor = ThemeManager.getAccentColor(getContext());
         init();
     }
 
     public WeeklyGraphView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        themeColor = ThemeManager.getAccentColor(getContext());
         init();
     }
 
@@ -55,7 +59,7 @@ public class WeeklyGraphView extends View {
 
         // Set up the Paint for drawing bars
         Paint barPaint = new Paint();
-        barPaint.setColor(Color.BLUE);
+        barPaint.setColor(themeColor);
         barPaint.setStrokeWidth(5);
 
         // Set up the Paint for drawing text labels
@@ -142,6 +146,11 @@ public class WeeklyGraphView extends View {
 
         this.dataPoints = dataPoints;
         this.dateList = dateList;
+        invalidate(); // Trigger onDraw
+    }
+
+    public void setThemeColor(int color) {
+        this.themeColor = color;
         invalidate(); // Trigger onDraw
     }
 

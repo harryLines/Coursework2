@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,8 +18,13 @@ import android.widget.TextClock;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class LoggingFragment extends Fragment {
     RadioButton walkingRadioButton;
@@ -33,6 +39,11 @@ public class LoggingFragment extends Fragment {
     int steps = 0;
     long seconds = 0;
     double distance = 0.0;
+    private RecyclerView recyclerViewReminders;
+    String savedLocationName;
+    String savedLocationReminders;
+    private ReminderAdapter reminderAdapter;
+
 
     public LoggingFragment() {
 
@@ -52,12 +63,12 @@ public class LoggingFragment extends Fragment {
         textViewNearbySavedLocation = view.findViewById(R.id.txtViewNearbySavedLocation);
         textClock = view.findViewById(R.id.textClockElapsedTime);
         textViewSteps = view.findViewById(R.id.textViewSteps);
+        recyclerViewReminders = view.findViewById(R.id.recyclerViewReminders);
+        reminderAdapter = new ReminderAdapter(new ArrayList<>());
+        recyclerViewReminders.setAdapter(reminderAdapter);
 
         // Set a click listener for the button
-        btnStartTracking.setOnClickListener(v -> {
-            // Call the method to start the service
-                toggleService();
-        });
+        btnStartTracking.setOnClickListener(v -> toggleService());
         return view;
     }
 
@@ -148,11 +159,24 @@ public class LoggingFragment extends Fragment {
             if (intent.getAction().equals(MovementTrackerService.ACTION_DISTANCE_UPDATE)) {
                 distance = intent.getDoubleExtra("distance", distance);
                 seconds = intent.getLongExtra("trackingDuration", seconds);
-                String savedLocationName = intent.getStringExtra("savedLocationName");
-                if (savedLocationName == null) {
-                    textViewNearbySavedLocation.setText("You are not nearby any saved locations");
-                } else {
-                    textViewNearbySavedLocation.setText("You are currently at: " + savedLocationName);
+                if(intent.getStringExtra("savedLocationName") != null) {
+                    savedLocationName = intent.getStringExtra("savedLocationName");
+                }
+                if(intent.getStringExtra("savedLocationReminders") != null) {
+                    savedLocationReminders = intent.getStringExtra("savedLocationReminders");
+                }
+                if (Objects.equals(savedLocationName, "NULL")) {
+                    textViewNearbySavedLocation.setText(R.string.you_are_not_nearby_any_saved_locations);
+                    // Update the adapter data
+                    reminderAdapter.setReminders(new ArrayList<>());
+                } else if(savedLocationName != null){
+                    textViewNearbySavedLocation.setText(String.format("%s%s", getString(R.string.you_are_currently_at), savedLocationName));
+                    // Get the list of reminders
+                    Log.d("REMINDERS",savedLocationReminders);
+                    List<String> reminderList = Arrays.asList(savedLocationReminders.split(","));
+
+                    // Update the adapter data
+                    reminderAdapter.setReminders(reminderList);
                 }
                 currentDistanceTxtView.setText(String.format(Locale.UK, "Distance: %.2f meters", distance));
                 steps = intent.getIntExtra("stepCount", steps);

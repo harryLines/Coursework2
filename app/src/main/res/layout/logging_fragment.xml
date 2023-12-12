@@ -69,6 +69,14 @@
             android:text="You are at:"
             android:textAlignment="center" />
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewReminders"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="visible"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
         <TextClock
             android:id="@+id/textClockElapsedTime"
             android:layout_width="match_parent"
@@ -82,7 +90,8 @@
             android:id="@+id/textViewSteps"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Steps Taken:" />
+            android:text="Steps Taken:"
+            android:textAlignment="center" />
 
     </LinearLayout>
 

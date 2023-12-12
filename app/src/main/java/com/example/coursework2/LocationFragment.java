@@ -152,7 +152,7 @@ public class LocationFragment extends Fragment {
                     LatLng selectedLatLng = place.getLatLng();
 
                     // Create a new SavedLocation instance
-                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng);
+                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng,null);
 
                     // Save the location to the file
                     saveLocationToFile(newLocation);
@@ -255,8 +255,7 @@ public class LocationFragment extends Fragment {
                     }
 
                     LatLng latLng = new LatLng(latitude, longitude);
-                    SavedLocation savedLocation = new SavedLocation(name, latLng);
-                    savedLocation.setReminders(reminders);
+                    SavedLocation savedLocation = new SavedLocation(name, latLng, reminders);
                     savedLocations.add(savedLocation);
                 }
             }
@@ -283,7 +282,7 @@ public class LocationFragment extends Fragment {
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
             // Format the location data and write it to the file
-            String locationString = String.format(Locale.UK, "%s,%.6f,%.6f,%s",
+            String locationString = String.format(Locale.UK, "%s,%.6f,%.6f",
                     newLocation.getName(), newLocation.getLatLng().latitude, newLocation.getLatLng().longitude);
 
             // Write the new location data to the file
