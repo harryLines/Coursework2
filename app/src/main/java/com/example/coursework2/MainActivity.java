@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new HomeFragment(), null);
-        adapter.addFragment(new LoggingFragment(), null); // Changed to LoggingFragment
+        adapter.addFragment(new LoggingFragment(), null);
         adapter.addFragment(new LocationFragment(), null);
         adapter.addFragment(new TripsFragment(), null);
         adapter.addFragment(new ProgressFragment(), null);
@@ -50,13 +50,13 @@ public class MainActivity extends AppCompatActivity {
                         tabIcon.setImageResource(R.drawable.log_tab_icon);
                         break;
                     case 2:
-                        tabIcon.setImageResource(R.drawable.settings_cog);
+                        tabIcon.setImageResource(R.drawable.location_tab_icon);
                         break;
                     case 3:
-                        tabIcon.setImageResource(R.drawable.settings_cog);
+                        tabIcon.setImageResource(R.drawable.trips_tab_icon);
                         break;
                     case 4:
-                        tabIcon.setImageResource(R.drawable.settings_cog);
+                        tabIcon.setImageResource(R.drawable.progress_tab_icon);
                         break;
                 }
             }
