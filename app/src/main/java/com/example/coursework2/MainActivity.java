@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 
 import com.google.android.material.tabs.TabLayout;
 
@@ -24,13 +25,42 @@ public class MainActivity extends AppCompatActivity {
         TabLayout tabLayout = findViewById(R.id.tabLayout);
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new HomeFragment(), "Home");
-        adapter.addFragment(new LoggingFragment(), "Log"); // Changed to LoggingFragment
-        adapter.addFragment(new LocationFragment(), "Locations");
-        adapter.addFragment(new TripsFragment(), "Your Trips");
+        adapter.addFragment(new HomeFragment(), null);
+        adapter.addFragment(new LoggingFragment(), null); // Changed to LoggingFragment
+        adapter.addFragment(new LocationFragment(), null);
+        adapter.addFragment(new TripsFragment(), null);
+        adapter.addFragment(new ProgressFragment(), null);
 
         viewPager.setAdapter(adapter);
+
         tabLayout.setupWithViewPager(viewPager);
+
+        for (int i = 0; i < tabLayout.getTabCount(); i++) {
+            TabLayout.Tab tab = tabLayout.getTabAt(i);
+            if (tab != null) {
+                tab.setCustomView(R.layout.tab_icon);
+                ImageView tabIcon = tab.getCustomView().findViewById(R.id.tabIcon);
+
+                // Set the appropriate icon for each tab
+                switch (i) {
+                    case 0:
+                        tabIcon.setImageResource(R.drawable.home_tab_icon);
+                        break;
+                    case 1:
+                        tabIcon.setImageResource(R.drawable.log_tab_icon);
+                        break;
+                    case 2:
+                        tabIcon.setImageResource(R.drawable.settings_cog);
+                        break;
+                    case 3:
+                        tabIcon.setImageResource(R.drawable.settings_cog);
+                        break;
+                    case 4:
+                        tabIcon.setImageResource(R.drawable.settings_cog);
+                        break;
+                }
+            }
+        }
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

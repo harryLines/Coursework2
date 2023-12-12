@@ -4,4 +4,8 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="blue">#0000FF</color>
+    <color name="positiveChange">#8BC34A</color>
+    <color name="negativeChange">#9EF44336</color>
+    <color name="positiveChangeText">#4CAF50</color>
+    <color name="negativeChangeText">#F44336</color>
 </resources>

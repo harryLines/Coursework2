@@ -93,7 +93,6 @@ public class HomeFragment extends Fragment {
         return (count > 0) ? (totalSpeed / count) : 0.0;
     }
 
-
     private Date parseDate(String dateString) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());

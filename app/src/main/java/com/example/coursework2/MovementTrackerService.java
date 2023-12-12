@@ -1,18 +1,26 @@
 package com.example.coursework2;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -36,6 +44,10 @@ import java.util.Locale;
 public class MovementTrackerService extends Service implements StepDetector.StepListener {
     public static final String ACTION_DISTANCE_UPDATE = "com.example.coursework2.ACTION_DISTANCE_UPDATE";
     private static final long MIN_LOCATION_UPDATE_INTERVAL = 60000;
+    private static final int NOTIFICATION_ID = 1;
+    private static final String CHANNEL_ID = "Movement Tracker Channel";
+    NotificationCompat.Builder builder;
+    NotificationManager notificationManager;
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
     private FusedLocationProviderClient fusedLocationClient;
@@ -94,7 +106,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         initTimerRunnable();
     }
 
-
     private void initTimerRunnable() {
         timerRunnable = new Runnable() {
             @Override
@@ -132,9 +143,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         startLocationUpdates();
-        movementType = intent.getIntExtra("movementType",-1);
+        movementType = intent.getIntExtra("movementType", -1);
         startTimeMillis = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
+        startForeground(NOTIFICATION_ID, buildForegroundNotification());
 
         return START_STICKY;
     }
@@ -142,6 +154,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     @Override
     public void onDestroy() {
         super.onDestroy();
+        stopForeground(true);
         saveTripToFile();
         stopLocationUpdates();
         timerHandler.removeCallbacks(timerRunnable);
@@ -213,17 +226,20 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     }
 
     private void startLocationUpdates() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Update interval in milliseconds
-        locationRequest.setFastestInterval(1000); // Fastest update interval
-
+        // Check for location permission
         if (ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED) {
+                this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationRequest locationRequest = new LocationRequest();
+            locationRequest.setInterval(1000); // Update interval in milliseconds
+            locationRequest.setFastestInterval(1000); // Fastest update interval
+
             fusedLocationClient.requestLocationUpdates(
                     locationRequest, locationCallback, null);
+        } else {
+            Log.e(TAG, "Location permission not granted");
         }
     }
+
 
     private void stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback);
@@ -311,8 +327,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         sendBroadcast(intent);
     }
 
-
-
     private List<SavedLocation> loadSavedLocations() {
         List<SavedLocation> savedLocations = new ArrayList<>();
 
@@ -320,7 +334,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             File file = new File(getApplicationContext().getFilesDir(), "saved_locations.txt");
 
             if (!file.exists()) {
-                Log.d("FILE","File Doesn't exist");
+                Log.d("FILE", "File Doesn't exist");
                 return null;
             } else {
 
@@ -332,24 +346,59 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 while ((line = bufferedReader.readLine()) != null) {
                     // Split the line using the delimiter
                     String[] parts = line.split(",");
-                        String name = parts[0].trim();
-                        double latitude = Double.parseDouble(parts[1].trim());
-                        double longitude = Double.parseDouble(parts[2].trim());
-                        List<String> reminders = new ArrayList<>();
-                        for (int i = 3; i < parts.length; i++) {
-                            reminders.add(parts[i].trim());
-                        }
+                    String name = parts[0].trim();
+                    double latitude = Double.parseDouble(parts[1].trim());
+                    double longitude = Double.parseDouble(parts[2].trim());
+                    List<String> reminders = new ArrayList<>();
+                    for (int i = 3; i < parts.length; i++) {
+                        reminders.add(parts[i].trim());
+                    }
 
-                        LatLng latLng = new LatLng(latitude, longitude);
-                        SavedLocation savedLocation = new SavedLocation(name, latLng, reminders);
-                        savedLocations.add(savedLocation);
+                    LatLng latLng = new LatLng(latitude, longitude);
+                    SavedLocation savedLocation = new SavedLocation(name, latLng, reminders);
+                    savedLocations.add(savedLocation);
                 }
 
                 bufferedReader.close();
             }
-            } catch (IOException e){
-                e.printStackTrace();
-            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return savedLocations;
+    }
+
+    private Notification buildForegroundNotification() {
+        // Create a notification channel (for Android Oreo and higher)
+        createNotificationChannel();
+
+        // Create an intent for the notification
+        Intent notificationIntent = new Intent(this, MainActivity.class); // Replace YourMainActivity with your main activity
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+
+        // Build the foreground notification
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Movement Tracker")
+                .setContentText("Your trip is being tracked.")
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true) // Auto-cancel the notification when clicked
+                .setContentIntent(pendingIntent);
+
+        return notificationBuilder.build();
+    }
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Movement Tracker Channel";
+            String description = "Channel for Movement Tracker notifications";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
     }
 }
