@@ -1,87 +1,100 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_margin="32dp"
-    android:orientation="vertical">
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <TextView
-        android:id="@+id/textViewFilter"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:layout_weight="0"
-        android:text="View Data For:"
-        android:textStyle="bold" />
+    <data>
+        <variable
+            name="viewModel"
+            type="com.example.TrailBlazer.HomeFragmentViewModel" />
+    </data>
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.25"
-        android:orientation="horizontal">
-
-        <CheckBox
-            android:id="@+id/checkBoxWalking"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="Walking"
-            app:checkedState="checked" />
-
-        <CheckBox
-            android:id="@+id/checkBoxRunning"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="Running" />
-
-        <CheckBox
-            android:id="@+id/checkBoxCycling"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="Cycling" />
-    </LinearLayout>
-
-    <com.example.coursework2.WeeklyGraphView
-        android:id="@+id/weeklyGraphView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_margin="12sp"
-        android:layout_weight="10" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/textViewWalkingSpeed"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/textViewRunningSpeed"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/textViewCyclingSpeed"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="0.5"
-        android:text="Your Past Week"
-        android:textAlignment="center"
-        android:textSize="36sp"
-        android:textStyle="bold" />
-</LinearLayout>
+        android:layout_margin="32dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textViewFilter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:layout_weight="0"
+            android:text="View Data For:"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1.25"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxWalking"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Walking"
+                app:checkedState="checked" />
+
+            <CheckBox
+                android:id="@+id/checkBoxRunning"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Running" />
+
+            <CheckBox
+                android:id="@+id/checkBoxCycling"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Cycling" />
+        </LinearLayout>
+
+        <com.example.TrailBlazer.WeeklyGraphView
+            android:id="@+id/weeklyGraphView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_margin="12sp"
+            android:layout_weight="10" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textViewWalkingSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@{viewModel.avgWalkSpeed}" />
+
+            <TextView
+                android:id="@+id/textViewRunningSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@{viewModel.avgRunSpeed}" />
+
+            <TextView
+                android:id="@+id/textViewCyclingSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@{viewModel.avgCycleSpeed}" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:text="Your Past Week"
+            android:textAlignment="center"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</layout>

@@ -1,20 +1,18 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
+import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import com.example.TrailBlazer.databinding.HomeFragmentBinding;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,46 +31,15 @@ public class HomeFragment extends Fragment {
     TextView txtViewAvgRunSpeed;
     TextView txtViewAvgCycleSpeed;
     WeeklyGraphView weeklyGraphView;
+    HomeFragmentViewModel viewModel;
     public HomeFragment() {
     }
 
-    private List<Trip> loadTripHistory() {
-        List<Trip> tripHistory = new ArrayList<>();
-        Log.d("TRIP LOAD", "BEGIN LOAD");
-        try {
-            File file = new File(getContext().getFilesDir(), "trip_history.txt");
-
-            if (!file.exists()) {
-                // File doesn't exist, return an empty list
-                Log.d("TRIP LOAD", "NO FILE");
-                return tripHistory;
-            }
-            Log.d("TRIP LOAD", "FILE FOUND");
-            FileInputStream fileInputStream = new FileInputStream(file);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                // Parse each line to create the Trip object
-                String[] parts = line.split(",");
-                    int movementType = Integer.parseInt(parts[0].trim());
-                    Date date = parseDate(parts[1].trim());
-                    double distance = Double.parseDouble(parts[2].trim());
-                    long time = Long.parseLong(parts[3].trim());
-
-                    Trip trip = new Trip(date, distance, movementType,time,null);
-                    Log.d("TRIP LOAD", String.valueOf(trip.getDistance()));
-                    tripHistory.add(trip);
-            }
-
-            bufferedReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return tripHistory;
+    private List<Trip> loadTripHistory() throws ParseException {
+        // Use the DatabaseManager to load trip history from the SQLite database
+        DatabaseManager databaseManager = new DatabaseManager(getContext());
+        return databaseManager.loadTripHistory();
     }
-
     private double calculateAverageSpeed(List<Trip> trips, int movementType) {
         double totalSpeed = 0.0;
         int count = 0;
@@ -93,42 +60,70 @@ public class HomeFragment extends Fragment {
         return (count > 0) ? (totalSpeed / count) : 0.0;
     }
 
-    private Date parseDate(String dateString) {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            return sdf.parse(dateString);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return new Date(); // Return the current date in case of parsing error
-        }
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.home_fragment, container, false);
 
-        checkboxWalking = view.findViewById(R.id.checkBoxWalking);
-        checkboxRunning = view.findViewById(R.id.checkBoxRunning);
-        checkboxCycling = view.findViewById(R.id.checkBoxCycling);
-        txtViewAvgWalkSpeed = view.findViewById(R.id.textViewWalkingSpeed);
-        txtViewAvgRunSpeed = view.findViewById(R.id.textViewRunningSpeed);
-        txtViewAvgCycleSpeed = view.findViewById(R.id.textViewCyclingSpeed);
+        HomeFragmentBinding binding = DataBindingUtil.inflate(inflater, R.layout.home_fragment, container, false);
+
+        // Create an instance of your ViewModel
+        viewModel = new ViewModelProvider(this).get(HomeFragmentViewModel.class);
+
+        // Set the ViewModel to the binding
+        binding.setViewModel(viewModel);
+
+        // Set the lifecycle owner for LiveData observation
+        binding.setLifecycleOwner(this);
+
+        checkboxWalking = binding.checkBoxWalking;
+        checkboxRunning = binding.checkBoxRunning;
+        checkboxCycling = binding.checkBoxCycling;
+        txtViewAvgWalkSpeed = binding.textViewWalkingSpeed;
+        txtViewAvgRunSpeed = binding.textViewRunningSpeed;
+        txtViewAvgCycleSpeed = binding.textViewCyclingSpeed;
+        weeklyGraphView = binding.weeklyGraphView;
+
+        viewModel.setWalkingChecked(true); // Set initial value for walking checkbox
+        viewModel.setRunningChecked(false); // Set initial value for running checkbox
+        viewModel.setCyclingChecked(false);
 
         // Load trip history data
-        List<Trip> tripHistory = loadTripHistory();
-
-        // Find the WeeklyGraphView in the layout
-        weeklyGraphView = view.findViewById(R.id.weeklyGraphView);
+        try {
+            List<Trip> tripHistory = loadTripHistory();
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
 
         // Set a listener to handle checkbox selections
-        checkboxWalking.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(weeklyGraphView));
-        checkboxRunning.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(weeklyGraphView));
-        checkboxCycling.setOnCheckedChangeListener((buttonView, isChecked) -> updateGraph(weeklyGraphView));
+        checkboxWalking.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            try {
+                updateGraph(weeklyGraphView);
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        checkboxRunning.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            try {
+                updateGraph(weeklyGraphView);
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        checkboxCycling.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            try {
+                updateGraph(weeklyGraphView);
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         // Initial update
-        updateGraph(weeklyGraphView);
+        try {
+            updateGraph(weeklyGraphView);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
 
-        return view;
+        return binding.getRoot();
     }
 
 
@@ -150,7 +145,11 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        updateGraph(weeklyGraphView);
+        try {
+            updateGraph(weeklyGraphView);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<Trip> filterWalkingTrips(List<Trip> trips) {
@@ -202,7 +201,7 @@ public class HomeFragment extends Fragment {
         return sdf.format(date);
     }
 
-    private void updateGraph(WeeklyGraphView weeklyGraphView) {
+    private void updateGraph(WeeklyGraphView weeklyGraphView) throws ParseException {
         List<Trip> selectedTrips = new ArrayList<>();
         List<Trip> tripHistory = loadTripHistory();
         // Find the selected checkboxes
@@ -211,17 +210,17 @@ public class HomeFragment extends Fragment {
         for (Trip trip : tripHistory) {
             switch (trip.getMovementType()) {
                 case Trip.MOVEMENT_WALK:
-                    if (checkboxWalking.isChecked()) {
+                    if (viewModel.isWalkingChecked().getValue()) {
                         selectedTrips.add(trip);
                     }
                     break;
                 case Trip.MOVEMENT_RUN:
-                    if (checkboxRunning.isChecked()) {
+                    if (viewModel.isRunningChecked().getValue()) {
                         selectedTrips.add(trip);
                     }
                     break;
                 case Trip.MOVEMENT_CYCLE:
-                    if (checkboxCycling.isChecked()) {
+                    if (viewModel.isCyclingChecked().getValue()) {
                         selectedTrips.add(trip);
                     }
                     break;
@@ -242,23 +241,8 @@ public class HomeFragment extends Fragment {
         );
 
         // Calculate and set the average speed for each movement type
-        double avgWalkSpeed = calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_WALK);
-        double avgRunSpeed = calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_RUN);
-        double avgCycleSpeed = calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_CYCLE);
-
-        // Set the average speed values to TextViews
-        txtViewAvgWalkSpeed.setText((avgWalkSpeed > 0)
-                ? String.format(Locale.UK, "Avg Walk Speed: %.2f m/s", avgWalkSpeed)
-                : "");
-
-        txtViewAvgRunSpeed.setText((avgRunSpeed > 0)
-                ? String.format(Locale.UK, "Avg Run Speed: %.2f m/s", avgRunSpeed)
-                : "");
-
-        txtViewAvgCycleSpeed.setText((avgCycleSpeed > 0)
-                ? String.format(Locale.UK, "Avg Cycle Speed: %.2f m/s", avgCycleSpeed)
-                : "");
+        viewModel.setAvgWalkSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_WALK));
+        viewModel.setAvgRunSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_RUN));
+        viewModel.setAvgCycleSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_CYCLE));
     }
-
-
 }

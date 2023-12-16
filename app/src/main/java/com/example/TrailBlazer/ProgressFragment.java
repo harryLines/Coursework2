@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -12,13 +12,7 @@ import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -27,8 +21,6 @@ import java.util.Locale;
 
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
-    List<Trip> tripHistoryCurrentTimeframe;
-    List<Trip> tripHistoryPreviousTimeframe;
     public ProgressFragment() {
         // Required empty public constructor
     }
@@ -229,9 +221,6 @@ public class ProgressFragment extends Fragment {
         return 0;
     }
 
-
-
-
     private void clearStatistics() {
         // Implement logic to clear or reset UI elements showing statistics
         // For example:
@@ -430,50 +419,22 @@ public class ProgressFragment extends Fragment {
     }
 
     private List<Trip> loadTripHistory() {
-        tripHistory = new ArrayList<>();
+        List<Trip> tripHistory = new ArrayList<>();
         Log.d("TRIP LOAD", "BEGIN LOAD");
+
         try {
-            File file = new File(getContext().getFilesDir(), "trip_history.txt");
+            // Initialize your DatabaseManager
+            DatabaseManager databaseManager = new DatabaseManager(requireContext());
 
-            if (!file.exists()) {
-                // File doesn't exist, return an empty list
-                Log.d("TRIP LOAD", "NO FILE");
-                return tripHistory;
-            }
-            Log.d("TRIP LOAD", "FILE FOUND");
-            FileInputStream fileInputStream = new FileInputStream(file);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            // Load trip history from the database
+            tripHistory = databaseManager.loadTripHistory();
+            Log.d("TRIP LOAD", "Number of trips loaded from the database: " + tripHistory.size());
 
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                // Parse each line to create the Trip object
-                String[] parts = line.split(",");
-                int movementType = Integer.parseInt(parts[0].trim());
-                Date date = parseDate(parts[1].trim());
-                double distance = Double.parseDouble(parts[2].trim());
-                long time = Long.parseLong(parts[3].trim());
-
-                Trip trip = new Trip(date, distance, movementType,time,null);
-                Log.d("TRIP LOAD", String.valueOf(trip.getDistance()));
-                tripHistory.add(trip);
-            }
-
-            bufferedReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return tripHistory;
-    }
-
-    private Date parseDate(String dateString) {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            return sdf.parse(dateString);
         } catch (ParseException e) {
             e.printStackTrace();
-            return new Date(); // Return the current date in case of parsing error
         }
+
+        return tripHistory;
     }
 
     private void updateWalkingStats(double totalDistance, double totalSpeed, long totalTime,

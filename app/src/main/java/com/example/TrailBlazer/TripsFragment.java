@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -19,11 +19,6 @@ import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -64,12 +59,17 @@ public class TripsFragment extends Fragment {
 
         // Set click listener for the ListView items
         listView.setOnItemClickListener((parent, view1, position, id) -> {
-            // Get the selected trip
+            // Get the selected trip using the adapter
             Trip selectedTrip = tripAdapter.getItem(position);
 
-            // Toggle the visibility of the ListView and MapFragment
-            toggleListViewAndMap(selectedTrip.getRoutePoints());
+            if (selectedTrip != null) {
+                Log.d("ROUTES", String.valueOf(selectedTrip.getDistance()));
+                // Toggle the visibility of the ListView and MapFragment
+                List<LatLng> loadedRoutePoints = selectedTrip.getRoutePoints();
+                toggleListViewAndMap(loadedRoutePoints);
+            }
         });
+
 
         MapsInitializer.initialize(getContext());
 
@@ -81,82 +81,20 @@ public class TripsFragment extends Fragment {
         Log.d("TRIP LOAD", "BEGIN LOAD");
 
         try {
-            File file = new File(getContext().getFilesDir(), "trip_history.txt");
+            // Initialize your DatabaseManager
+            DatabaseManager databaseManager = new DatabaseManager(requireContext());
 
-            if (!file.exists()) {
-                // File doesn't exist, return an empty list
-                Log.d("TRIP LOAD", "NO FILE");
-                return tripHistory;
-            }
+            // Load trip history from the database
+            tripHistory = databaseManager.loadTripHistory();
 
-            Log.d("TRIP LOAD", "FILE FOUND");
-            FileInputStream fileInputStream = new FileInputStream(file);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            Log.d("TRIP LOAD", "Number of trips loaded from the database: " + tripHistory.size());
 
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                Log.d("LINE LOAD",line);
-                // Parse each line to create the Trip object
-                String[] parts = line.split(",");
-                Log.d("LENGTH", String.valueOf(parts.length));
-                if (parts.length == 5) {
-                    int movementType = Integer.parseInt(parts[0].trim());
-                    Date date = parseDate(parts[1].trim());
-                    double distance = Double.parseDouble(parts[2].trim());
-                    long time = Long.parseLong(parts[3].trim());
-
-                    // Parse the route points array from the last part
-                    String routePointsString = parts[4].trim();
-                    List<LatLng> routePoints = parseRoutePoints(routePointsString);
-
-                    Log.d("RoutePoints Contents", routePoints.toString());
-
-                    Trip trip = new Trip(date, distance, movementType, time, routePoints);
-                    Log.d("TRIP LOAD", String.valueOf(trip.getDistance()));
-                    tripHistory.add(trip);
-                }
-            }
-
-            bufferedReader.close();
-        } catch (IOException e) {
+        } catch (ParseException e) {
             e.printStackTrace();
         }
 
         return tripHistory;
     }
-
-    private List<LatLng> parseRoutePoints(String routePointsString) {
-        List<LatLng> routePoints = new ArrayList<>();
-
-        // Remove brackets from the string
-        routePointsString = routePointsString.substring(1, routePointsString.length() - 1);
-
-        // Split the string into sets of coordinates
-        String[] coordinateSets = routePointsString.split("\\|");
-
-        for (String coordinateSet : coordinateSets) {
-            // Skip empty elements
-            if (!coordinateSet.trim().isEmpty()) {
-                // Remove leading and trailing whitespace
-                coordinateSet = coordinateSet.trim();
-
-                // Remove square brackets and parentheses
-                coordinateSet = coordinateSet.replace("[", "").replace("]", "").replace("(", "").replace(")", "");
-
-                // Split the set into individual coordinates
-                String[] latLng = coordinateSet.split(";");
-                if (latLng.length == 2) { // Ensure there are latitude and longitude
-                    double latitude = Double.parseDouble(latLng[0].trim());
-                    double longitude = Double.parseDouble(latLng[1].trim());
-                    routePoints.add(new LatLng(latitude, longitude));
-                }
-            }
-        }
-
-        return routePoints;
-    }
-
 
     private Date parseDate(String dateString) {
         try {

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="com.example.TrailBlazer.READ_DATA" />
+    <uses-permission android:name="com.example.TrailBlazer.WRITE_DATA" />
 
     <application
         android:allowBackup="true"
@@ -33,10 +34,16 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="true">
-
         </activity>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCrKsxTguyZRaVlFrC9ADqGZbmLKyxctWs"/>
+        <provider
+            android:name="com.example.TrailBlazer.Provider"
+            android:authorities="com.example.TrailBlazer"
+            android:exported="true"
+            android:enabled="true"
+            android:readPermission="com.example.TrailBlazer.READ_DATA"
+            android:writePermission="com.example.TrailBlazer.WRITE_DATA" />
     </application>
 </manifest>

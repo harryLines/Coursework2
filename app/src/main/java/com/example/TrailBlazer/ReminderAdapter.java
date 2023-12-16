@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.view.LayoutInflater;
 import android.view.View;

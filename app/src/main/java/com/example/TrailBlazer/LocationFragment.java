@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -28,19 +28,9 @@ import com.google.android.libraries.places.api.net.FetchPlaceRequest;
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
 import com.google.android.libraries.places.api.net.PlacesClient;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 public class LocationFragment extends Fragment {
 
@@ -152,10 +142,10 @@ public class LocationFragment extends Fragment {
                     LatLng selectedLatLng = place.getLatLng();
 
                     // Create a new SavedLocation instance
-                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng,null);
+                    long locationId = saveLocationToDatabase(locationName, selectedLatLng);
 
-                    // Save the location to the file
-                    saveLocationToFile(newLocation);
+                    // Create a new SavedLocation instance with the locationId
+                    SavedLocation newLocation = new SavedLocation(locationId, locationName, selectedLatLng, null);
 
                     // Update the RecyclerView with the new data
                     savedLocations.add(newLocation);
@@ -175,6 +165,14 @@ public class LocationFragment extends Fragment {
                 Toast.makeText(requireContext(), "Error: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private long saveLocationToDatabase(String locationName, LatLng selectedLatLng) {
+        // Initialize your DatabaseManager
+        DatabaseManager databaseManager = new DatabaseManager(requireContext());
+
+        // Save the location to the database and get the locationId
+        return databaseManager.saveLocation(locationName, selectedLatLng);
     }
 
 
@@ -224,76 +222,12 @@ public class LocationFragment extends Fragment {
     private List<SavedLocation> loadSavedLocations() {
         List<SavedLocation> savedLocations = new ArrayList<>();
 
-        try {
-            File file = new File(getContext().getFilesDir(), "saved_locations.txt");
+        // Initialize your DatabaseManager
+        DatabaseManager databaseManager = new DatabaseManager(requireContext());
 
-            if (!file.exists()) {
-                // If the file doesn't exist, create an empty one
-                file.createNewFile();
-            }
-
-            FileInputStream fileInputStream = new FileInputStream(file);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                // Split the line using the delimiter
-                String[] parts = line.split(",");
-                if (parts.length >= 3) {
-                    String name = parts[0].trim();
-                    double latitude = Double.parseDouble(parts[1].trim());
-                    double longitude = Double.parseDouble(parts[2].trim());
-
-                    // Check if reminders are present in the line
-                    List<String> reminders = new ArrayList<>();
-                    if (parts.length > 3) {
-                        // Extract reminders
-                        for (int i = 3; i < parts.length; i++) {
-                            reminders.add(parts[i].trim());
-                        }
-                    }
-
-                    LatLng latLng = new LatLng(latitude, longitude);
-                    SavedLocation savedLocation = new SavedLocation(name, latLng, reminders);
-                    savedLocations.add(savedLocation);
-                }
-            }
-
-            bufferedReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Load saved locations from the database
+        savedLocations = databaseManager.loadSavedLocations();
 
         return savedLocations;
     }
-
-    private void saveLocationToFile(SavedLocation newLocation) {
-        try {
-            File file = new File(getContext().getFilesDir(), "saved_locations.txt");
-
-            if (!file.exists()) {
-                // If the file doesn't exist, create a new one
-                file.createNewFile();
-            }
-
-            FileOutputStream fileOutputStream = new FileOutputStream(file, true);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream);
-            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
-
-            // Format the location data and write it to the file
-            String locationString = String.format(Locale.UK, "%s,%.6f,%.6f",
-                    newLocation.getName(), newLocation.getLatLng().latitude, newLocation.getLatLng().longitude);
-
-            // Write the new location data to the file
-            bufferedWriter.write(locationString);
-            bufferedWriter.newLine();
-
-            bufferedWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
 }

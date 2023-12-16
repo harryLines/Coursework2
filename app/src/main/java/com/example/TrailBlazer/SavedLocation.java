@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -6,11 +6,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SavedLocation {
+    public long getLocationID() {
+        return locationID;
+    }
+
+    public void setLocationID(long locationID) {
+        this.locationID = locationID;
+    }
+
+    long locationID;
     private String name;
     private LatLng latLng;
     private List<String> reminders;
 
-    public SavedLocation(String name, LatLng latLng,List<String> reminders) {
+    public SavedLocation(long locationID,String name, LatLng latLng,List<String> reminders) {
         this.name = name;
         this.latLng = latLng;
         if(reminders == null) {
@@ -18,6 +27,7 @@ public class SavedLocation {
         } else {
             this.reminders = reminders;
         }
+        this.locationID = locationID;
     }
 
     public String getName() {

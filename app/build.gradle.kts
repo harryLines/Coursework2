@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.coursework2"
+    namespace = "com.example.TrailBlazer"
     compileSdk = 33
 
     defaultConfig {
-        applicationId = "com.example.coursework2"
+        applicationId = "com.example.TrailBlazer"
         minSdk = 31
         targetSdk = 32
         versionCode = 1
@@ -28,7 +28,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
     buildFeatures {
-        viewBinding = true
+        dataBinding = true
     }
 }
 

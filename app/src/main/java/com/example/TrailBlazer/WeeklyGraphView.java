@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -9,9 +9,6 @@ import android.util.Log;
 import android.view.View;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;

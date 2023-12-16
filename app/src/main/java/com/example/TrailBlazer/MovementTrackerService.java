@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.Manifest;
 import android.app.Notification;
@@ -6,10 +6,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
+import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
@@ -20,7 +21,6 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -28,13 +28,8 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.Gson;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -64,6 +59,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     Sensor accelerometerSensor;
     private List<LatLng> routePoints;
     private long lastLocationPointTime;
+    private DatabaseManager databaseManager;
 
     @Override
     public void onCreate() {
@@ -104,6 +100,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         routePoints = new ArrayList<>();
         lastLocationPointTime = 0;
         initTimerRunnable();
+        databaseManager = new DatabaseManager(this);
     }
 
     private void initTimerRunnable() {
@@ -155,57 +152,30 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     public void onDestroy() {
         super.onDestroy();
         stopForeground(true);
-        saveTripToFile();
+        saveTripToDatabase();
         stopLocationUpdates();
         timerHandler.removeCallbacks(timerRunnable);
         sensorManager.unregisterListener(stepDetector);
+        databaseManager.close();
     }
 
-    private void saveTripToFile() {
-        try {
-            if (lastLocation != null && movementType != -1) {
-                // Get the current date and time
-                String dateTime = new SimpleDateFormat("yyyy-MM-dd", Locale.UK)
-                        .format(Calendar.getInstance().getTime());
+    private void saveTripToDatabase() {
+        SQLiteDatabase db = databaseManager.getWritableDatabase();
 
-                // Format the trip data
-                String tripData = String.format(Locale.UK, "%s,%s,%.2f,%s,[",
-                        movementType, dateTime, totalDistance, elapsedMillis / 1000);
+        ContentValues values = new ContentValues();
+        values.put(DatabaseManager.COLUMN_MOVEMENT_TYPE, movementType);
+        values.put(DatabaseManager.COLUMN_DATE, new SimpleDateFormat("yyyy-MM-dd", Locale.UK)
+                .format(Calendar.getInstance().getTime()));
+        values.put(DatabaseManager.COLUMN_DISTANCE_TRAVELED, totalDistance);
+        values.put(DatabaseManager.COLUMN_TIME,elapsedMillis / 1000);
+        String routePointsJson = new Gson().toJson(routePoints);
+        values.put(DatabaseManager.COLUMN_ROUTE_POINTS, routePointsJson);
 
-                // Append the route array to the file
-                for (LatLng latLng : routePoints) {
-                    tripData += String.format(Locale.UK, "(%.6f;%.6f)|", latLng.latitude, latLng.longitude);
-                }
+        // Insert the data into the database
+        long rowId = db.insert(DatabaseManager.TABLE_TRIP_HISTORY, null, values);
 
-                // Remove the trailing comma and close the array
-                if (!routePoints.isEmpty()) {
-                    tripData = tripData.substring(0, tripData.length() - 1);
-                }
-                tripData += "]";
-
-                // Get the app's internal files directory
-                File directory = getApplicationContext().getFilesDir();
-
-                // Create a file to save trip details
-                File tripFile = new File(directory, "trip_history.txt");
-
-                // If the file doesn't exist, create a new one
-                if (!tripFile.exists()) {
-                    tripFile.createNewFile();
-                }
-
-                // Append the trip data to the file
-                FileWriter writer = new FileWriter(tripFile, true);
-                writer.append(tripData).append("\n");
-                writer.close();
-
-                Log.d(TAG, "Trip details saved to file: " + tripFile.getAbsolutePath());
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        db.close();
     }
-
     private void initLocationUpdates() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -265,9 +235,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             sendMovementUpdateBroadcast(totalDistance, newLocation);
         }
     }
-
+    // Use a formula to calculate distance instead of outsourcing to an API to ensure speed
     private double calculateHaversineDistance(double startLat, double startLng, double endLat, double endLng) {
-        double R = 6371; // Earth radius in kilometers
+        double R = 6371;
 
         double dLat = Math.toRadians(endLat - startLat);
         double dLng = Math.toRadians(endLng - startLng);
@@ -278,7 +248,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        return R * c * 1000; // Distance in meters
+        return R * c * 1000;
     }
 
     @Override
@@ -328,42 +298,15 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     }
 
     private List<SavedLocation> loadSavedLocations() {
-        List<SavedLocation> savedLocations = new ArrayList<>();
+        // Initialize your DatabaseManager
+        DatabaseManager databaseManager = new DatabaseManager(getApplicationContext());
 
-        try {
-            File file = new File(getApplicationContext().getFilesDir(), "saved_locations.txt");
+        // Load saved locations from the database
+        List<SavedLocation> savedLocations = databaseManager.loadSavedLocations();
 
-            if (!file.exists()) {
-                Log.d("FILE", "File Doesn't exist");
-                return null;
-            } else {
+        // Close the database connection
+        databaseManager.close();
 
-                FileInputStream fileInputStream = new FileInputStream(file);
-                InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    // Split the line using the delimiter
-                    String[] parts = line.split(",");
-                    String name = parts[0].trim();
-                    double latitude = Double.parseDouble(parts[1].trim());
-                    double longitude = Double.parseDouble(parts[2].trim());
-                    List<String> reminders = new ArrayList<>();
-                    for (int i = 3; i < parts.length; i++) {
-                        reminders.add(parts[i].trim());
-                    }
-
-                    LatLng latLng = new LatLng(latitude, longitude);
-                    SavedLocation savedLocation = new SavedLocation(name, latLng, reminders);
-                    savedLocations.add(savedLocation);
-                }
-
-                bufferedReader.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         return savedLocations;
     }
 
@@ -372,21 +315,32 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         createNotificationChannel();
 
         // Create an intent for the notification
-        Intent notificationIntent = new Intent(this, MainActivity.class); // Replace YourMainActivity with your main activity
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.putExtra("fragmentToShow", "Logging");
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // Create an intent for the button
+        Intent buttonIntent = new Intent(this, MainActivity.class);  // Replace YourButtonActionActivity with the actual activity you want to open on button click
+        buttonIntent.putExtra("fragmentToShow", "N/A");
+        buttonIntent.putExtra("stopLogging", true);
+        buttonIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent buttonPendingIntent = PendingIntent.getActivity(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Build the foreground notification
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Movement Tracker")
                 .setContentText("Your trip is being tracked.")
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setSmallIcon(R.drawable.log_tab_icon)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true) // Auto-cancel the notification when clicked
-                .setContentIntent(pendingIntent);
+                .setContentIntent(notificationPendingIntent)
+                .addAction(android.R.drawable.ic_media_pause, "Stop Tracking", buttonPendingIntent);
 
         return notificationBuilder.build();
     }
+
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "Movement Tracker Channel";

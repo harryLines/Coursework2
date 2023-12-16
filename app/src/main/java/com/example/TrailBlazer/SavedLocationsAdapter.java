@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -76,8 +76,8 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
             if (!newReminder.isEmpty()) {
                 savedLocation.addReminder(newReminder);
 
-                // Save the updated reminders to the file
-                saveRemindersToFile(savedLocation);
+                // Save the updated reminders to the database
+                saveRemindersToDatabase(savedLocation);
 
                 // Update the displayed reminders text
                 remindersText.append("- ").append(newReminder).append("\n");
@@ -87,7 +87,6 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
                 editTextNewReminder.setText("");
             }
         });
-
         // Set up the positive button (Close)
         builder.setPositiveButton("Close", (dialog, which) -> {
             dialog.dismiss();
@@ -95,6 +94,16 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
 
         // Show the dialog
         builder.create().show();
+    }
+
+    private void saveRemindersToDatabase(SavedLocation savedLocation) {
+        // Initialize your DatabaseManager
+        DatabaseManager databaseManager = new DatabaseManager(context);
+
+        // Save the updated reminders to the database
+        for (String reminder : savedLocation.getReminders()) {
+            databaseManager.saveReminder(savedLocation.getLocationID(), reminder);
+        }
     }
 
     private void saveRemindersToFile(SavedLocation savedLocation) {

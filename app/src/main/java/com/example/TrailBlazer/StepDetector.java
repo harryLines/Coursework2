@@ -1,4 +1,4 @@
-package com.example.coursework2;
+package com.example.TrailBlazer;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
