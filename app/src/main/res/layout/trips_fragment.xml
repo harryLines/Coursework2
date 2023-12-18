@@ -14,34 +14,58 @@
             android:id="@+id/listViewTrips"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:background="@android:color/white"
+            android:clipToPadding="false"
             android:divider="@android:color/darker_gray"
             android:dividerHeight="0.5dp"
-            android:padding="16dp"
-            android:background="@android:color/white"
-            android:clipToPadding="false" />
+            android:padding="16dp" />
 
         <!-- This is your MapFragment content -->
-        <FrameLayout
-            android:id="@+id/mapContainer"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone">
+            android:orientation="vertical">
 
-            <com.google.android.gms.maps.MapView
-                android:id="@+id/mapView"
+            <FrameLayout
+                android:id="@+id/mapContainer"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginBottom="?android:attr/actionBarSize" />
+                android:layout_height="0dp"
+                android:layout_weight="4"
+                android:visibility="gone">
 
-            <Button
-                android:id="@+id/backButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:layout_gravity="top|start"
-                android:elevation="10dp" />
+                <com.google.android.gms.maps.MapView
+                    android:id="@+id/mapView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginBottom="?android:attr/actionBarSize" />
 
-        </FrameLayout>
+                <Button
+                    android:id="@+id/backButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:elevation="10dp"
+                    android:text="Back" />
+
+            </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/lineChartLayout"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/lineChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </LinearLayout>
+
+
+        </LinearLayout>
 
     </FrameLayout>
 

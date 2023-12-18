@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.TrailBlazer"
+    namespace = "com.example.trailblazer"
     compileSdk = 33
 
     defaultConfig {
@@ -35,6 +35,8 @@ android {
 
 dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("androidx.work:work-runtime:2.7.0")
     implementation("com.google.android.gms:play-services-location:17.1.0")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.libraries.places:places:3.3.0")

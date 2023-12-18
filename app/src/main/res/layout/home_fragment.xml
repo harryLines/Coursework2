@@ -5,7 +5,7 @@
     <data>
         <variable
             name="viewModel"
-            type="com.example.TrailBlazer.HomeFragmentViewModel" />
+            type="com.example.trailblazer.HomeFragmentViewModel" />
     </data>
 
     <LinearLayout
@@ -35,24 +35,30 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:text="Walking"
-                app:checkedState="checked" />
+                android:checked="@{viewModel.isWalkingChecked}"
+                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setWalkingChecked(isChecked)}"/>
 
             <CheckBox
                 android:id="@+id/checkBoxRunning"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="Running" />
+                android:text="Running"
+                android:checked="@{viewModel.isRunningChecked}"
+                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setRunningChecked(isChecked)}"/>
 
             <CheckBox
                 android:id="@+id/checkBoxCycling"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="Cycling" />
+                android:text="Cycling"
+                android:checked="@{viewModel.isCyclingChecked}"
+                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setCyclingChecked(isChecked)}"/>
+
         </LinearLayout>
 
-        <com.example.TrailBlazer.WeeklyGraphView
+        <com.example.trailblazer.WeeklyGraphView
             android:id="@+id/weeklyGraphView"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -85,6 +91,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@{viewModel.avgCycleSpeed}" />
+
         </LinearLayout>
 
         <TextView

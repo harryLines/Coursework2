@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.example.TrailBlazer.READ_DATA" />
     <uses-permission android:name="com.example.TrailBlazer.WRITE_DATA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
 
     <application
         android:allowBackup="true"
@@ -39,8 +41,8 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCrKsxTguyZRaVlFrC9ADqGZbmLKyxctWs"/>
         <provider
-            android:name="com.example.TrailBlazer.Provider"
-            android:authorities="com.example.TrailBlazer"
+            android:name="com.example.trailblazer.Provider"
+            android:authorities="com.example.trailblazer"
             android:exported="true"
             android:enabled="true"
             android:readPermission="com.example.TrailBlazer.READ_DATA"
