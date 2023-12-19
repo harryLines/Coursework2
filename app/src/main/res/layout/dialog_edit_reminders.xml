@@ -11,7 +11,8 @@
         android:layout_height="wrap_content"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:text="Reminders:" />
+        android:text="Reminders:"
+        style="@style/Regular"/>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -22,19 +23,23 @@
             android:id="@+id/textViewReminders"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            style="@style/Regular"/>
     </ScrollView>
 
     <EditText
         android:id="@+id/editTextNewReminder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Add a new reminder"/>
+        android:hint="Add a new reminder"
+        style="@style/Regular"/>
 
     <Button
         android:id="@+id/btnAddReminder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Reminder" />
+        android:background="@drawable/button_design"
+        android:text="Add Reminder"
+        style="@style/Regular"/>
 
 </LinearLayout>

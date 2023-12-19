@@ -1,5 +1,6 @@
 package com.example.trailblazer;
 
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -189,13 +190,15 @@ public class ProgressFragment extends Fragment {
 
 
     private double calculateSpeed(double distance, long time) {
-        // Calculate average speed (speed = distance / time)
+        // Calculate average speed in kilometers per hour
         if (time > 0) {
-            return distance / time;
+            double speedInMetersPerSecond = distance / time;
+            return speedInMetersPerSecond * 3.6; // Convert to kilometers per hour
         } else {
             return 0; // Handle division by zero or negative time
         }
     }
+
 
     private void updateUI(int movementType, double totalDistance, double totalSpeed, long totalTime,
                           int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
@@ -346,22 +349,36 @@ public class ProgressFragment extends Fragment {
 
     private void updateSingleCardViewBackground(int percentChange, int cardViewId) {
         View cardView = getView().findViewById(cardViewId);
-        int color;
 
-        // Set the background color based on the percentage change
+        // Create a GradientDrawable
+        GradientDrawable gradientDrawable = new GradientDrawable();
+
+        // Set the shape (RECTANGLE is the default)
+        gradientDrawable.setShape(GradientDrawable.RECTANGLE);
+
+        // Set the corner radius (adjust as needed)
+        gradientDrawable.setCornerRadius(8);
+
+        // Set the gradient colors based on the percentage change
         if (percentChange > 0) {
-            // Positive percentage change, set background to green
-            color = getResources().getColor(R.color.positiveChange);
+            // Positive percentage change, set gradient from green to a lighter green
+            int startColor = getResources().getColor(R.color.positiveChangeStart);
+            int endColor = getResources().getColor(R.color.positiveChangeEnd);
+            gradientDrawable.setColors(new int[]{startColor, endColor});
         } else if (percentChange < 0) {
-            // Negative percentage change, set background to red
-            color = getResources().getColor(R.color.negativeChange);
+            // Negative percentage change, set gradient from red to a lighter red
+            int startColor = getResources().getColor(R.color.negativeChangeStart);
+            int endColor = getResources().getColor(R.color.negativeChangeEnd);
+            gradientDrawable.setColors(new int[]{startColor, endColor});
         } else {
-            // No change, set a default background color
-            color = getResources().getColor(R.color.black);
+            // No change, set a default background color (black)
+            gradientDrawable.setColor(getResources().getColor(R.color.black));
         }
 
-        cardView.setBackgroundColor(color);
+        // Set the GradientDrawable as the background of the CardView
+        cardView.setBackground(gradientDrawable);
     }
+
 
 
     private String getMovementTypeName(int movementType) {
@@ -466,7 +483,7 @@ public class ProgressFragment extends Fragment {
 
     private String formatSpeed(double speed) {
         // Format speed to one decimal place and append " m/s"
-        return String.format(Locale.getDefault(), "%.1f m/s", speed);
+        return String.format(Locale.getDefault(), "%.1f km/h", speed);
     }
 
     private String formatTime(long timeInSeconds) {

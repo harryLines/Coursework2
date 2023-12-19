@@ -126,6 +126,13 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        if(id== R.id.action_profile) {
+            Intent intent = new Intent(this, ProfileActivity.class);
+            startActivity(intent);
+            finish();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 }

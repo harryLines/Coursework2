@@ -33,9 +33,10 @@ public class DatabaseTripInsertWorker extends Worker {
         String elevationDataJson = getInputData().getString("elevationData");
         List<LatLng> routePoints = new Gson().fromJson(routePointsJson, new TypeToken<List<LatLng>>(){}.getType());
         List<Double> elevationData = new Gson().fromJson(elevationDataJson, new TypeToken<List<Double>>(){}.getType());
+        int caloriesBurned = getInputData().getInt("caloriesBurned",0);
 
         // Create a new Trip instance with the required data
-        Trip trip = new Trip(new Date(startTimeMillis), 0, totalDistance, movementType, elapsedMillis / 1000, routePoints,elevationData);
+        Trip trip = new Trip(new Date(startTimeMillis), 0, totalDistance, movementType, elapsedMillis / 1000, routePoints,elevationData,caloriesBurned);
 
         // Initialize DatabaseManager and insert the trip into the database
         DatabaseManager databaseManager = new DatabaseManager(getApplicationContext());

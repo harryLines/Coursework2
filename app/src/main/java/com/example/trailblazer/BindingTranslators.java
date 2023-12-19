@@ -34,6 +34,7 @@ public class BindingTranslators {
         view.setText(formattedTime);
     }
 
+
     private static double roundToTwoDecimalPlaces(double value) {
         // Use DecimalFormat to round to two decimal places
         DecimalFormat df = new DecimalFormat("#.##");

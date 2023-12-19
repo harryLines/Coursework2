@@ -45,6 +45,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|start"
                     android:elevation="10dp"
+                    android:background="@drawable/button_design"
                     android:text="Back" />
 
             </FrameLayout>

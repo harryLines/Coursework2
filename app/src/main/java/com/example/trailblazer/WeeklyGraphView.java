@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -62,6 +63,7 @@ public class WeeklyGraphView extends View {
         // Set up the Paint for drawing text labels
         Paint textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
+        textPaint.setTypeface(Typeface.defaultFromStyle(Typeface.NORMAL));
         textPaint.setTextSize(48);
 
         // Calculate the width of each bar based on the available space

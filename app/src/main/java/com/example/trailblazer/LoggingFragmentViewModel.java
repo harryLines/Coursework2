@@ -7,6 +7,7 @@ public class LoggingFragmentViewModel extends ViewModel {
 
     // LiveData for UI updates
     private final MutableLiveData<Double> distance = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Integer> calories = new MutableLiveData<>(0);
     private final MutableLiveData<Long> seconds = new MutableLiveData<>(0L);
     private final MutableLiveData<String> savedLocationName = new MutableLiveData<>("");
     private final MutableLiveData<Integer> steps = new MutableLiveData<>(0);
@@ -34,6 +35,9 @@ public class LoggingFragmentViewModel extends ViewModel {
     // Setter methods for updating LiveData values
     public void setDistance(double distanceValue) {
         distance.setValue(distanceValue);
+    }
+    public void setCalories(int caloriesValue) {
+        calories.setValue(caloriesValue);
     }
 
     public void setSeconds(long secondsValue) {
@@ -70,5 +74,9 @@ public class LoggingFragmentViewModel extends ViewModel {
 
     public void setCyclingChecked(boolean cyclingChecked) {
         this.cyclingChecked.setValue(cyclingChecked);
+    }
+
+    public MutableLiveData<Integer> getCalories() {
+        return calories;
     }
 }

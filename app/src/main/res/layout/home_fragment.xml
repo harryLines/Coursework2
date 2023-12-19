@@ -18,9 +18,9 @@
             android:id="@+id/textViewFilter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:layout_weight="0"
-            android:text="View Data For:"
+            android:layout_marginBottom="6dp"
+            android:text="Filter:"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -31,30 +31,39 @@
 
             <CheckBox
                 android:id="@+id/checkBoxWalking"
+                style="@style/Regular"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="Walking"
+                android:button="@null"
                 android:checked="@{viewModel.isWalkingChecked}"
-                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setWalkingChecked(isChecked)}"/>
+                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setWalkingChecked(isChecked)}"
+                android:text="Walking"
+                android:textAlignment="center" />
 
             <CheckBox
                 android:id="@+id/checkBoxRunning"
+                style="@style/Regular"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="Running"
+                android:button="@null"
                 android:checked="@{viewModel.isRunningChecked}"
-                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setRunningChecked(isChecked)}"/>
+                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setRunningChecked(isChecked)}"
+                android:text="Running"
+                android:textAlignment="center" />
 
             <CheckBox
                 android:id="@+id/checkBoxCycling"
+                style="@style/Regular"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="Cycling"
+                android:button="@null"
                 android:checked="@{viewModel.isCyclingChecked}"
-                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setCyclingChecked(isChecked)}"/>
+                android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setCyclingChecked(isChecked)}"
+                android:text="Cycling"
+                android:textAlignment="center" />
 
         </LinearLayout>
 
@@ -63,7 +72,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_margin="12sp"
-            android:layout_weight="10" />
+            android:layout_weight="10"
+            style="@style/Regular"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -76,31 +86,36 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@{viewModel.avgWalkSpeed}" />
+                android:text="@{viewModel.avgWalkSpeed}"
+                style="@style/Regular"/>
 
             <TextView
                 android:id="@+id/textViewRunningSpeed"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@{viewModel.avgRunSpeed}" />
+                android:text="@{viewModel.avgRunSpeed}"
+                style="@style/Regular"/>
 
             <TextView
                 android:id="@+id/textViewCyclingSpeed"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@{viewModel.avgCycleSpeed}" />
+                android:text="@{viewModel.avgCycleSpeed}"
+                style="@style/Regular"/>
 
         </LinearLayout>
 
         <TextView
             android:id="@+id/textView"
+            style="@style/Regular"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.5"
             android:text="Your Past Week"
             android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textSize="36sp"
             android:textStyle="bold" />
     </LinearLayout>

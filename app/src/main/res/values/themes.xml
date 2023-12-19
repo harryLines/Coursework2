@@ -4,7 +4,7 @@
     <style name="AppTheme.Light" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">#FF9800</item>
         <item name="colorPrimaryDark">#F57C00</item>
-        <item name="colorAccent">#000000</item>
+        <item name="colorAccent">#FF5722</item>
         <!-- Define other light theme attributes -->
     </style>
 
@@ -12,7 +12,7 @@
     <style name="AppTheme.Dark" parent="Theme.AppCompat">
         <item name="colorPrimary">#607D8B</item>
         <item name="colorPrimaryDark">#455A64</item>
-        <item name="colorAccent">#880000</item>
+        <item name="colorAccent">#1E1E49</item>
         <!-- Define other dark theme attributes -->
     </style>
 
@@ -44,7 +44,7 @@
     <style name="AppTheme.Red" parent="Theme.AppCompat">
         <item name="colorPrimary">#FF5252</item>
         <item name="colorPrimaryDark">#FF1744</item>
-        <item name="colorAccent">#4CAF50</item>
+        <item name="colorAccent">#FB2222</item>
         <!-- Define other red theme attributes -->
     </style>
 

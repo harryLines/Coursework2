@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -25,6 +26,8 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.trailblazer.databinding.LoggingFragmentBinding;
 
 import java.io.File;
@@ -33,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class LoggingFragment extends Fragment {
@@ -41,11 +45,13 @@ public class LoggingFragment extends Fragment {
     RadioButton runningRadioButton;
     RadioButton cyclingRadioButton;
     TextView currentDistanceTxtView;
+    TextView textViewTravelType;
     RadioGroup movementTypeRadioBtnGroup;
     Button btnStartTracking;
     TextView textViewNearbySavedLocation;
     TextView textClock;
     TextView textViewSteps;
+    TextView textViewCaloriesBurned;
     String savedLocationReminders;
     private ReminderAdapter reminderAdapter;
     private LoggingFragmentViewModel viewModel;
@@ -73,6 +79,9 @@ public class LoggingFragment extends Fragment {
         textViewNearbySavedLocation = binding.txtViewNearbySavedLocation;
         textClock = binding.textClockElapsedTime;
         textViewSteps = binding.textViewSteps;
+        textViewTravelType = binding.textViewTravelType;
+        textViewCaloriesBurned = binding.textViewCalories;
+
         RecyclerView recyclerViewReminders = binding.recyclerViewReminders;
 
         reminderAdapter = new ReminderAdapter(new ArrayList<>());
@@ -83,41 +92,73 @@ public class LoggingFragment extends Fragment {
         return binding.getRoot();
     }
 
-    private void disableRadioGroup(RadioGroup radioGroup) {
-        radioGroup.setClickable(false);
-        radioGroup.setFocusable(false);
-
-        for (int i = 0; i < radioGroup.getChildCount(); i++) {
-            radioGroup.getChildAt(i).setClickable(false);
-            radioGroup.getChildAt(i).setFocusable(false);
-        }
-    }
-
-    private void enableRadioGroup(RadioGroup radioGroup) {
-        radioGroup.setClickable(true);
-        radioGroup.setFocusable(true);
-
-        for (int i = 0; i < radioGroup.getChildCount(); i++) {
-            radioGroup.getChildAt(i).setClickable(true);
-            radioGroup.getChildAt(i).setFocusable(true);
-        }
-    }
-
     // Method to start the service
     private void toggleService() {
         // Check if the service is already running
         if (isServiceRunning()) {
             // The service is running, so stop it
             stopService();
-            enableRadioGroup(movementTypeRadioBtnGroup);
+            showStopTrackingDialog();
             btnStartTracking.setText("Start Tracking");
+
+            // Make radio buttons visible
+            walkingRadioButton.setVisibility(View.VISIBLE);
+            runningRadioButton.setVisibility(View.VISIBLE);
+            cyclingRadioButton.setVisibility(View.VISIBLE);
+            textViewTravelType.setVisibility(View.VISIBLE);
+
+            textClock.setVisibility(View.GONE);
+            resetValues();
+
         } else {
             // The service is not running, so start it
             if (startService()) {
-                disableRadioGroup(movementTypeRadioBtnGroup);
                 btnStartTracking.setText("Stop Tracking");
+
+                // Make radio buttons invisible
+                walkingRadioButton.setVisibility(View.GONE);
+                runningRadioButton.setVisibility(View.GONE);
+                cyclingRadioButton.setVisibility(View.GONE);
+                textViewTravelType.setVisibility(View.GONE);
+
+                textClock.setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    private void showStopTrackingDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
+        builder.setTitle("Tracking Stopped")
+                .setMessage(getCurrentValuesMessage())
+                .setPositiveButton("OK", (dialog, which) -> resetValues())
+                .show();
+    }
+
+    private String getCurrentValuesMessage() {
+        String distance = "Distance: " + viewModel.getDistance().getValue() + " km\n";
+        String duration = "Duration: " + formatTime(viewModel.getSeconds().getValue()) + "\n";
+        String steps = "Steps: " + viewModel.getSteps().getValue() + "\n";
+        String calories = "Calories Burned: " + viewModel.getCalories().getValue() + " kcal\n";
+        return distance + duration + steps + calories;
+    }
+
+    private String formatTime(long seconds) {
+        long hours = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long remainingSeconds = seconds % 60;
+
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, remainingSeconds);
+    }
+
+
+
+    private void resetValues() {
+        viewModel.setDistance(0.0);
+        viewModel.setSeconds(0);
+        viewModel.setSteps(0);
+        viewModel.setCalories(0);
+        viewModel.setSavedLocationName("");
+        reminderAdapter.setReminders(new ArrayList<>());
     }
 
     // Method to start the service
@@ -172,6 +213,7 @@ public class LoggingFragment extends Fragment {
                 Log.d("DISTANCE", String.valueOf(viewModel.getDistance().getValue()));
                 viewModel.setSeconds(intent.getLongExtra("trackingDuration", viewModel.getSeconds().getValue()));
                 viewModel.setSteps(intent.getIntExtra("stepCount", viewModel.getSteps().getValue()));
+                viewModel.setCalories(intent.getIntExtra("caloriesBurned",viewModel.getCalories().getValue()));
 
                 if (Objects.equals(intent.getStringExtra("savedLocationName"), "NULL")) {
                     textViewNearbySavedLocation.setText(R.string.you_are_not_nearby_any_saved_locations);

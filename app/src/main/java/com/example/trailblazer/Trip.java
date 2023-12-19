@@ -14,9 +14,19 @@ public class Trip {
     public static final int MOVEMENT_RUN = 1;
     public static final int MOVEMENT_CYCLE = 2;
     private double distance;
+    private int caloriesBurned;
     private List<Double> elevationData;
     List<LatLng> route;
-    public Trip(Date date, long tripID, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData) {
+
+    public int getCaloriesBurned() {
+        return caloriesBurned;
+    }
+
+    public void setCaloriesBurned(int caloriesBurned) {
+        this.caloriesBurned = caloriesBurned;
+    }
+
+    public Trip(Date date, long tripID, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories) {
         this.date = date;
         this.tripID = tripID;
         this.movementType = movementType;
@@ -24,6 +34,7 @@ public class Trip {
         this.timeInSeconds = time;
         this.route = routePoints;
         this.elevationData = elevationData;
+        this.caloriesBurned = calories;
     }
 
     public Date getDate() {

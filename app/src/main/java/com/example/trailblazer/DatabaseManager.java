@@ -24,7 +24,7 @@ import java.util.Locale;
 public class DatabaseManager extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "trailBlazerDatabase.db";
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 8;
     // Saved locations table
     public static final String TABLE_SAVED_LOCATIONS = "saved_locations";
     public static final String COLUMN_LOCATION_ID = "_id";
@@ -47,6 +47,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
     public static final String COLUMN_ROUTE_POINTS = "route_points";
     public static final String COLUMN_IMAGE_PATH = "image_path";
     public static final String COLUMN_ELEVATION_DATA = "elevation_data";
+    public static final String COLUMN_CALORIES_BURNED = "calories_burned";
 
     private static final String CREATE_TRIP_HISTORY_TABLE =
             "CREATE TABLE " + TABLE_TRIP_HISTORY + " (" +
@@ -57,6 +58,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
                     COLUMN_TIME + " INTEGER, " +
                     COLUMN_ROUTE_POINTS + " TEXT, " +
                     COLUMN_IMAGE_PATH + " TEXT, " +
+                    COLUMN_CALORIES_BURNED + " TEXT, " +
                     COLUMN_ELEVATION_DATA + " TEXT" + ");";
 
     private static final String CREATE_SAVED_LOCATIONS_TABLE =
@@ -101,7 +103,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         SQLiteDatabase db = getReadableDatabase();
 
         Cursor cursor = db.query(TABLE_TRIP_HISTORY,
-                new String[]{COLUMN_TRIP_ID, COLUMN_MOVEMENT_TYPE, COLUMN_DATE, COLUMN_DISTANCE_TRAVELED, COLUMN_TIME, COLUMN_ROUTE_POINTS,COLUMN_ELEVATION_DATA},
+                new String[]{COLUMN_TRIP_ID, COLUMN_MOVEMENT_TYPE, COLUMN_DATE, COLUMN_DISTANCE_TRAVELED, COLUMN_TIME, COLUMN_ROUTE_POINTS,COLUMN_ELEVATION_DATA,COLUMN_CALORIES_BURNED},
                 null, null, null, null, null);
 
         if (cursor != null && cursor.moveToFirst()) {
@@ -113,8 +115,9 @@ public class DatabaseManager extends SQLiteOpenHelper {
                 @SuppressLint("Range") String latLongPoints = cursor.getString(cursor.getColumnIndex(COLUMN_ROUTE_POINTS));
                 @SuppressLint("Range") long time = cursor.getLong(cursor.getColumnIndex(COLUMN_TIME));
                 @SuppressLint("Range") String elevationData = cursor.getString(cursor.getColumnIndex(COLUMN_ELEVATION_DATA));
+                @SuppressLint("Range") int calories = cursor.getInt(cursor.getColumnIndex(COLUMN_CALORIES_BURNED));
 
-                Trip tripItem = new Trip(parseDateString(date), tripId, distanceTraveled, movementType, time, parseRoutePoints(latLongPoints), parseElevationData(elevationData));
+                Trip tripItem = new Trip(parseDateString(date), tripId, distanceTraveled, movementType, time, parseRoutePoints(latLongPoints), parseElevationData(elevationData),calories);
                 tripHistory.add(tripItem);
                 Log.d("LOADED ROUTE POINTS:", parseRoutePoints(latLongPoints).toString());
 
@@ -152,6 +155,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         values.put(COLUMN_ROUTE_POINTS, convertRoutePointsToJson(trip.getRoutePoints()));
         values.put(COLUMN_TIME, trip.getTimeInSeconds());
         values.put(COLUMN_ELEVATION_DATA, convertElevationDataToJson(trip.getElevationData()));
+        values.put(COLUMN_CALORIES_BURNED,trip.getCaloriesBurned());
 
         long tripId = db.insert(TABLE_TRIP_HISTORY, null, values);
 

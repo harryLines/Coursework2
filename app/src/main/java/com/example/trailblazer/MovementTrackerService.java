@@ -9,6 +9,7 @@ import android.app.Service;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
@@ -54,6 +55,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private int movementType = -1;
     private Location lastLocation;
     private double totalDistance = 0.0;
+    private int caloriesBurned = 0;
+    private float weight = 0;
     private long startTimeMillis;
     private Handler timerHandler;
     private Runnable timerRunnable;
@@ -105,12 +108,67 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // stepDetector = new StepDetector(this);
         routePoints = new ArrayList<>();
         elevationData = new ArrayList<>();
+        // Retrieve the user's weight from SharedPreferences
+        SharedPreferences sharedPreferences = getSharedPreferences("user_details", Context.MODE_PRIVATE);
+        weight = sharedPreferences.getFloat("weight", 0.0f);
+
         lastLocationPointTime = 0;
         lastElevationDataTime = 0;
         initTimerRunnable();
         startLocationUpdates();
         databaseManager = new DatabaseManager(this);
     }
+
+
+    //MET calculation based on (https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html)
+    private int calculateCaloriesBurned() {
+        double MET;
+        double elapsedTimeInHours = (double) elapsedMillis / 3600000;
+        double currentSpeedKMPH = (totalDistance / 1000) / elapsedTimeInHours;
+
+        Log.d("CALORIES CALC", "Elapsed Time (hours): " + elapsedTimeInHours);
+        Log.d("CALORIES CALC", "Total Distance (km): " + (totalDistance / 1000));
+        Log.d("CALORIES CALC", "Current Speed (KMPH): " + currentSpeedKMPH);
+
+        if(movementType != Trip.MOVEMENT_CYCLE) {
+            if (currentSpeedKMPH <= 2.7) {
+                MET = 2.3;
+            } else if (currentSpeedKMPH <= 4) {
+                MET = 2.9;
+            } else if (currentSpeedKMPH <= 4.8) {
+                MET = 3.3;
+            } else if (currentSpeedKMPH <= 5.5) {
+                MET = 3.6;
+            } else if (currentSpeedKMPH <= 7) {
+                MET = 7;
+            } else {
+                MET = 8;
+            }
+        } else {
+            if (currentSpeedKMPH <= 5.5) {
+                MET = 3.5;
+            } else if (currentSpeedKMPH <= 9.4) {
+                MET = 5.8;
+            } else if (currentSpeedKMPH <= 11.9) {
+                MET = 6.8;
+            } else if (currentSpeedKMPH <= 13.9) {
+                MET = 8.0;
+            } else if (currentSpeedKMPH <= 15.9) {
+                MET = 10.0;
+            } else {
+                MET = 12.0;
+            }
+        }
+
+        int caloriesBurned = (int) (MET * weight * elapsedTimeInHours);
+
+        Log.d("CALORIES CALC", "MET: " + MET);
+        Log.d("CALORIES CALC", "Weight: " + weight);
+        Log.d("CALORIES CALC", "Calories Burned: " + caloriesBurned);
+
+        return caloriesBurned;
+    }
+
 
     private void initTimerRunnable() {
         timerRunnable = new Runnable() {
@@ -187,7 +245,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 totalDistance,
                 movementType,
                 elapsedMillis / 1000,
-                routePoints,elevationData);
+                routePoints,elevationData,caloriesBurned);
 
         // Create a Data object with the necessary information
         Data inputData = new Data.Builder()
@@ -258,7 +316,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             // Check if enough time has passed since the last elevation data update
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastElevationDataTime >= MIN_ELEVATION_UPDATE_INTERVAL) {
-
+                caloriesBurned = calculateCaloriesBurned();
                 // Add the obtained elevation to the elevation data list
                 addElevationForLocation(newLocation);
                 lastElevationDataTime = currentTime;
@@ -350,6 +408,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         intent.putExtra("trackingDuration", seconds);
 
         intent.putExtra("stepCount", stepDetector.getStepCount());
+        Log.d("CARLOEIWS", String.valueOf(caloriesBurned));
+        intent.putExtra("caloriesBurned",caloriesBurned);
+
         sendBroadcast(intent);
     }
 
