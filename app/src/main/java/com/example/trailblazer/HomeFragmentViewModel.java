@@ -8,6 +8,8 @@ public class HomeFragmentViewModel extends ViewModel {
     private MutableLiveData<Boolean> walkingChecked = new MutableLiveData<>(false);
     private MutableLiveData<Boolean> runningChecked = new MutableLiveData<>(false);
     private MutableLiveData<Boolean> cyclingChecked = new MutableLiveData<>(false);
+    private MutableLiveData<Boolean> distanceChecked = new MutableLiveData<>(false);
+    private MutableLiveData<Boolean> caloriesChecked = new MutableLiveData<>(false);
     private MutableLiveData<Double> avgWalkSpeed = new MutableLiveData<>(0.0);
     private MutableLiveData<Double> avgRunSpeed = new MutableLiveData<>(0.0);
     private MutableLiveData<Double> avgCycleSpeed = new MutableLiveData<>(0.0);
@@ -60,5 +62,21 @@ public class HomeFragmentViewModel extends ViewModel {
 
     public void setAvgCycleSpeed(double speed) {
         avgCycleSpeed.setValue(speed);
+    }
+
+    public LiveData<Boolean> isDistanceChecked() {
+        return distanceChecked;
+    }
+
+    public void setDistanceChecked(boolean distanceChecked) {
+        this.distanceChecked.setValue(distanceChecked);
+    }
+
+    public LiveData<Boolean> isCaloriesChecked() {
+        return caloriesChecked;
+    }
+
+    public void setCaloriesChecked(boolean caloriesChecked) {
+        this.caloriesChecked.setValue(caloriesChecked);
     }
 }

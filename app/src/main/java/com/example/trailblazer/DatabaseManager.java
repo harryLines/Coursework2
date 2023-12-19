@@ -155,7 +155,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         values.put(COLUMN_ROUTE_POINTS, convertRoutePointsToJson(trip.getRoutePoints()));
         values.put(COLUMN_TIME, trip.getTimeInSeconds());
         values.put(COLUMN_ELEVATION_DATA, convertElevationDataToJson(trip.getElevationData()));
-        values.put(COLUMN_CALORIES_BURNED,trip.getCaloriesBurned());
+        values.put(COLUMN_CALORIES_BURNED, trip.getCaloriesBurned());
 
         long tripId = db.insert(TABLE_TRIP_HISTORY, null, values);
 

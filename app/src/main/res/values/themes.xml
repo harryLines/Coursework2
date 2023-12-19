@@ -2,9 +2,9 @@
 
     <!-- Light Theme -->
     <style name="AppTheme.Light" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">#FF9800</item>
-        <item name="colorPrimaryDark">#F57C00</item>
-        <item name="colorAccent">#FF5722</item>
+        <item name="colorPrimary">#ADDEE4</item>
+        <item name="colorPrimaryDark">#6E9BA1</item>
+        <item name="colorAccent">#4D787C</item>
         <!-- Define other light theme attributes -->
     </style>
 
@@ -12,39 +12,39 @@
     <style name="AppTheme.Dark" parent="Theme.AppCompat">
         <item name="colorPrimary">#607D8B</item>
         <item name="colorPrimaryDark">#455A64</item>
-        <item name="colorAccent">#1E1E49</item>
+        <item name="colorAccent">#2E2E78</item>
         <!-- Define other dark theme attributes -->
     </style>
 
     <!-- Orange Theme -->
     <style name="AppTheme.Orange" parent="Theme.AppCompat">
-        <item name="colorPrimary">#FF9800</item>
-        <item name="colorPrimaryDark">#F57C00</item>
-        <item name="colorAccent">#FFB05C</item>
+        <item name="colorPrimary">#E1BA7F</item>
+        <item name="colorPrimaryDark">#A3713E</item>
+        <item name="colorAccent">#CA9867</item>
         <!-- Define other orange theme attributes -->
     </style>
 
     <!-- Green Theme -->
     <style name="AppTheme.Green" parent="Theme.AppCompat">
-        <item name="colorPrimary">#4CAF50</item>
-        <item name="colorPrimaryDark">#388E3C</item>
-        <item name="colorAccent">#3FC321</item>
+        <item name="colorPrimary">#99D384</item>
+        <item name="colorPrimaryDark">#4B9E4E</item>
+        <item name="colorAccent">#3C6732</item>
         <!-- Define other green theme attributes -->
     </style>
 
     <!-- Purple Theme -->
     <style name="AppTheme.Purple" parent="Theme.AppCompat">
-        <item name="colorPrimary">#b17ccc</item>
-        <item name="colorPrimaryDark">#b17ccc</item>
-        <item name="colorAccent">#FF4081</item>
+        <item name="colorPrimary">#8C52AA</item>
+        <item name="colorPrimaryDark">#7A4297</item>
+        <item name="colorAccent">#BD82D3</item>
         <!-- Define other purple theme attributes -->
     </style>
 
     <!-- Red Theme -->
-    <style name="AppTheme.Red" parent="Theme.AppCompat">
-        <item name="colorPrimary">#FF5252</item>
-        <item name="colorPrimaryDark">#FF1744</item>
-        <item name="colorAccent">#FB2222</item>
+    <style name="AppTheme.Red" parent="Theme.AppCompat.Light">
+        <item name="colorPrimary">#CF8C8C</item>
+        <item name="colorPrimaryDark">#BD6C7C</item>
+        <item name="colorAccent">#5A3030</item>
         <!-- Define other red theme attributes -->
     </style>
 

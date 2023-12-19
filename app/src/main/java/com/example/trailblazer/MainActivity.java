@@ -2,6 +2,7 @@ package com.example.trailblazer;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -20,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
         ThemeManager.applyTheme(this, currentTheme);
         setContentView(R.layout.activity_main);
 
-        ViewPager viewPager = findViewById(R.id.viewPager);
+        ViewPager2 viewPager = findViewById(R.id.viewPager);
         TabLayout tabLayout = findViewById(R.id.tabLayout);
         // Check if there is an intent and if it contains the extra data
         if (getIntent() != null && getIntent().hasExtra("fragmentToShow") || getIntent().hasExtra("stopLogging")) {
@@ -43,16 +45,19 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
 
-            ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
+            ViewPagerAdapter adapter = new ViewPagerAdapter(this);
             adapter.addFragment(new HomeFragment(), null);
-            adapter.addFragment(new LoggingFragment(), null);
             adapter.addFragment(new LocationFragment(), null);
+            adapter.addFragment(new LoggingFragment(), null);
             adapter.addFragment(new TripsFragment(), null);
             adapter.addFragment(new ProgressFragment(), null);
 
             viewPager.setAdapter(adapter);
 
-            tabLayout.setupWithViewPager(viewPager);
+            new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+                // Customize tab text or icons if needed
+                // tab.setText("Tab " + (position + 1));
+            }).attach();
 
             for (int i = 0; i < tabLayout.getTabCount(); i++) {
                 TabLayout.Tab tab = tabLayout.getTabAt(i);
@@ -66,10 +71,10 @@ public class MainActivity extends AppCompatActivity {
                             tabIcon.setImageResource(R.drawable.home_tab_icon);
                             break;
                         case 1:
-                            tabIcon.setImageResource(R.drawable.log_tab_icon);
+                            tabIcon.setImageResource(R.drawable.location_tab_icon);
                             break;
                         case 2:
-                            tabIcon.setImageResource(R.drawable.location_tab_icon);
+                            tabIcon.setImageResource(R.drawable.log_tab_icon);
                             break;
                         case 3:
                             tabIcon.setImageResource(R.drawable.trips_tab_icon);

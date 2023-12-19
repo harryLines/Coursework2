@@ -111,7 +111,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // Retrieve the user's weight from SharedPreferences
         SharedPreferences sharedPreferences = getSharedPreferences("user_details", Context.MODE_PRIVATE);
         weight = sharedPreferences.getFloat("weight", 0.0f);
-
         lastLocationPointTime = 0;
         lastElevationDataTime = 0;
         initTimerRunnable();
@@ -120,7 +119,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     }
 
 
-    //MET calculation based on (https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html)
+    // MET calculation based on (https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html)
     private int calculateCaloriesBurned() {
         double MET;
         double elapsedTimeInHours = (double) elapsedMillis / 3600000;
@@ -255,6 +254,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 .putLong("elapsedMillis", trip.getTimeInSeconds() * 1000)
                 .putString("routePoints", new Gson().toJson(trip.getRoutePoints()))
                 .putString("elevationData", new Gson().toJson(trip.getElevationData()))
+                .putInt("caloriesBurned", trip.getCaloriesBurned())
                 .build();
 
         // Call the insertTripHistoryInBackground method from DatabaseManager

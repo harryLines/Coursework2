@@ -1,7 +1,6 @@
 package com.example.trailblazer;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,11 +10,9 @@ import android.widget.Toast;
 
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.trailblazer.databinding.HomeFragmentBinding;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -34,10 +30,13 @@ public class HomeFragment extends Fragment {
     CheckBox checkboxWalking;
     CheckBox checkboxRunning;
     CheckBox checkboxCycling;
+    CheckBox checkBoxDistance;
+    CheckBox checkboxCalories;
     TextView txtViewAvgWalkSpeed;
     TextView txtViewAvgRunSpeed;
     TextView txtViewAvgCycleSpeed;
-    WeeklyGraphView weeklyGraphView;
+    WeeklyGraphViewDistance weeklyGraphViewDistance;
+    WeeklyGraphViewCalories weeklyGraphViewCalories;
     HomeFragmentViewModel viewModel;
     HomeFragmentBinding binding;
     private boolean prevWalkingChecked = true;
@@ -87,20 +86,23 @@ public class HomeFragment extends Fragment {
         checkboxWalking = binding.checkBoxWalking;
         checkboxRunning = binding.checkBoxRunning;
         checkboxCycling = binding.checkBoxCycling;
+        checkBoxDistance = binding.checkBoxDistance;
+        checkboxCalories = binding.checkBoxCalories;
         txtViewAvgWalkSpeed = binding.textViewWalkingSpeed;
         txtViewAvgRunSpeed = binding.textViewRunningSpeed;
         txtViewAvgCycleSpeed = binding.textViewCyclingSpeed;
-        weeklyGraphView = binding.weeklyGraphView;
+        weeklyGraphViewDistance = binding.weeklyGraphViewDistance;
+        weeklyGraphViewCalories = binding.weeklyGraphViewCalories;
 
-        viewModel.setWalkingChecked(true); // Set initial value for walking checkbox
-        viewModel.setRunningChecked(false); // Set initial value for running checkbox
+        viewModel.setWalkingChecked(true);
+        viewModel.setRunningChecked(false);
         viewModel.setCyclingChecked(false);
 
         // Load trip history data
         viewModel.isWalkingChecked().observe(getViewLifecycleOwner(), isChecked -> {
             try {
                 if (isChecked != prevWalkingChecked) {
-                    updateGraph(weeklyGraphView);
+                    updateGraph();
                     prevWalkingChecked = isChecked;
                     if (isChecked) {
                         showToast("Walking is now enabled.");
@@ -116,7 +118,7 @@ public class HomeFragment extends Fragment {
         viewModel.isRunningChecked().observe(getViewLifecycleOwner(), isChecked -> {
             try {
                 if (isChecked != prevRunningChecked) {
-                    updateGraph(weeklyGraphView);
+                    updateGraph();
                     prevRunningChecked = isChecked;
                     if (isChecked) {
                         showToast("Running is now enabled.");
@@ -132,7 +134,7 @@ public class HomeFragment extends Fragment {
         viewModel.isCyclingChecked().observe(getViewLifecycleOwner(), isChecked -> {
             try {
                 if (isChecked != prevCyclingChecked) {
-                    updateGraph(weeklyGraphView);
+                    updateGraph();
                     prevCyclingChecked = isChecked;
                     if (isChecked) {
                         showToast("Cycling is now enabled.");
@@ -145,9 +147,38 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        checkBoxDistance.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !viewModel.isDistanceChecked().getValue()) {
+                weeklyGraphViewDistance.setVisibility(View.VISIBLE);
+                weeklyGraphViewCalories.setVisibility(View.GONE);
+                viewModel.setCaloriesChecked(false);
+                try {
+                    updateGraph();
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            viewModel.setDistanceChecked(isChecked);
+        });
+
+        checkboxCalories.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !viewModel.isCaloriesChecked().getValue()) {
+                weeklyGraphViewDistance.setVisibility(View.GONE);
+                weeklyGraphViewCalories.setVisibility(View.VISIBLE);
+                viewModel.setDistanceChecked(false);
+                try {
+                    updateGraph();
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            viewModel.setCaloriesChecked(isChecked);
+        });
+
+
         // Initial update
         try {
-            updateGraph(weeklyGraphView);
+            updateGraph();
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -217,7 +248,7 @@ public class HomeFragment extends Fragment {
         return sdf.format(date);
     }
 
-    private void updateGraph(WeeklyGraphView weeklyGraphView) throws ParseException {
+    private void updateGraph() throws ParseException {
         List<Trip> tripHistory = loadTripHistory();
         List<Trip> selectedTrips = new ArrayList<>();
         Set<String> selectedMovementTypes = new HashSet<>();
@@ -245,17 +276,32 @@ public class HomeFragment extends Fragment {
         // Filter trips within the last week
         List<Trip> selectedTripsLastWeek = filterTripsLastWeek(selectedTrips);
 
-        // Summarize distance and time for selected trips by day
-        Map<String, Double> distanceByDay = calculateDistanceByDay(selectedTripsLastWeek);
+        if(checkBoxDistance.isChecked()) {
 
-        // Set the data to the WeeklyGraphView
-        List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
-        weeklyGraphView.setDataPoints(
-                convertMapToList(distanceByDay),
-                dateListLastWeek
-        );
+            // Summarize distance and time for selected trips by day
+            Map<String, Double> distanceByDay = calculateDistanceByDay(selectedTripsLastWeek);
 
-        Collections.reverse(dateListLastWeek);
+            // Set the data to the WeeklyGraphView
+            List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
+            weeklyGraphViewDistance.setDataPoints(
+                    convertMapToList(distanceByDay),
+                    dateListLastWeek
+            );
+
+            Collections.reverse(dateListLastWeek);
+        } else {
+            // Summarize calorie values for selected trips by day
+            Map<String, Double> caloriesByDay = calculateCaloriesByDay(selectedTripsLastWeek);
+
+            // Set the data to the WeeklyGraphViewCalories
+            List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
+            weeklyGraphViewCalories.setDataPoints(
+                    convertMapToListInt(caloriesByDay),
+                    dateListLastWeek
+            );
+
+            Collections.reverse(dateListLastWeek);
+        }
 
         // Calculate and set the average speed for each movement type
         viewModel.setAvgWalkSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_WALK));
@@ -272,4 +318,28 @@ public class HomeFragment extends Fragment {
             selectedMovementTypes.add("Cycling");
         }
     }
+
+    private List<Integer> convertMapToListInt(Map<String, Double> data) {
+        List<Integer> dataList = new ArrayList<>();
+        for (Map.Entry<String, Double> entry : data.entrySet()) {
+            dataList.add(entry.getValue().intValue());
+        }
+        return dataList;
+    }
+
+
+    private Map<String, Double> calculateCaloriesByDay(List<Trip> trips) {
+        Map<String, Double> caloriesByDay = new TreeMap<>();
+
+        for (Trip trip : trips) {
+            String day = getDayFromDate(trip.getDate());
+            double calories = trip.getCaloriesBurned();
+
+            // Update the total calories for the day
+            caloriesByDay.put(day, caloriesByDay.getOrDefault(day, 0.0) + calories);
+        }
+
+        return caloriesByDay;
+    }
+
 }

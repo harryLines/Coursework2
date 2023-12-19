@@ -18,7 +18,7 @@
             android:id="@+id/textViewFilter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
+            android:layout_margin="12dp"
             android:text="Filter:"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -35,6 +35,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="@drawable/checkbox_design"
                 android:button="@null"
                 android:checked="@{viewModel.isWalkingChecked}"
                 android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setWalkingChecked(isChecked)}"
@@ -47,6 +48,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="@drawable/checkbox_design"
                 android:button="@null"
                 android:checked="@{viewModel.isRunningChecked}"
                 android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setRunningChecked(isChecked)}"
@@ -59,6 +61,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="@drawable/checkbox_design"
                 android:button="@null"
                 android:checked="@{viewModel.isCyclingChecked}"
                 android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setCyclingChecked(isChecked)}"
@@ -67,56 +70,151 @@
 
         </LinearLayout>
 
-        <com.example.trailblazer.WeeklyGraphView
-            android:id="@+id/weeklyGraphView"
+        <com.example.trailblazer.WeeklyGraphViewDistance
+            android:id="@+id/weeklyGraphViewDistance"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_margin="12sp"
             android:layout_weight="10"
             style="@style/Regular"/>
 
+        <com.example.trailblazer.WeeklyGraphViewCalories
+            android:id="@+id/weeklyGraphViewCalories"
+            style="@style/Regular"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_margin="12sp"
+            android:layout_weight="10"
+            android:visibility="gone" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_weight="0.75"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/textViewWalkingSpeed"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+            <CheckBox
+                android:id="@+id/checkBoxDistance"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="@{viewModel.avgWalkSpeed}"
-                style="@style/Regular"/>
+                android:background="@drawable/graph_filter_checkbox_design"
+                android:button="@null"
+                android:text="Distance"
+                android:checked="@{!viewModel.isCaloriesChecked}"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-            <TextView
-                android:id="@+id/textViewRunningSpeed"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+            <CheckBox
+                android:id="@+id/checkBoxCalories"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="@{viewModel.avgRunSpeed}"
-                style="@style/Regular"/>
-
-            <TextView
-                android:id="@+id/textViewCyclingSpeed"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@{viewModel.avgCycleSpeed}"
-                style="@style/Regular"/>
+                android:background="@drawable/graph_filter_checkbox_design"
+                android:button="@null"
+                android:text="Calories Burned"
+                android:checked="@{!viewModel.isDistanceChecked()}"
+                android:textAlignment="center"
+                android:textSize="20sp"
+                />
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/textView"
-            style="@style/Regular"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="Your Past Week"
-            android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-            android:textSize="36sp"
-            android:textStyle="bold" />
+            android:layout_height="0dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginRight="12dp"
+            android:layout_weight="2"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/imageViewWalking"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="2.2"
+                    android:adjustViewBounds="false"
+                    android:cropToPadding="false"
+                    android:scaleType="center"
+                    android:src="@drawable/log_tab_icon" />
+
+                <TextView
+                    android:id="@+id/textViewWalkingSpeed"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text='@{String.format("%.1f km/h", viewModel.avgWalkSpeed)}'
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="28sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/imageViewRunning"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="2.2"
+                    android:adjustViewBounds="false"
+                    android:cropToPadding="false"
+                    android:scaleType="center"
+                    android:src="@drawable/running_icon" />
+
+                <TextView
+                    android:id="@+id/textViewRunningSpeed"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text='@{String.format("%.1f km/h", viewModel.avgRunSpeed)}'
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="28sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/imageViewCycling"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="2.2"
+                    android:adjustViewBounds="false"
+                    android:cropToPadding="false"
+                    android:scaleType="center"
+                    android:src="@drawable/cycling_icon" />
+
+                <TextView
+                    android:id="@+id/textViewCyclingSpeed"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text='@{String.format("%.1f km/h", viewModel.avgCycleSpeed)}'
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="28sp" />
+            </LinearLayout>
+
+
+        </LinearLayout>
+
     </LinearLayout>
 </layout>

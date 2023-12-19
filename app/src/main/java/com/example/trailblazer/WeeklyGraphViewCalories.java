@@ -15,25 +15,26 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class WeeklyGraphView extends View {
-
-    private List<Float> dataPoints;
+public class WeeklyGraphViewCalories extends View {
+    private List<Integer> dataPoints;
     private List<Date> dateList;
     private int themeColor;
+    Paint textPaint = new Paint();
+    Paint barPaint = new Paint();
 
-    public WeeklyGraphView(Context context) {
+    public WeeklyGraphViewCalories(Context context) {
         super(context);
         themeColor = ThemeManager.getAccentColor(getContext());
         init();
     }
 
-    public WeeklyGraphView(Context context, AttributeSet attrs) {
+    public WeeklyGraphViewCalories(Context context, AttributeSet attrs) {
         super(context, attrs);
         themeColor = ThemeManager.getAccentColor(getContext());
         init();
     }
 
-    public WeeklyGraphView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public WeeklyGraphViewCalories(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         themeColor = ThemeManager.getAccentColor(getContext());
         init();
@@ -56,12 +57,10 @@ public class WeeklyGraphView extends View {
         int numPoints = dataPoints.size();
 
         // Set up the Paint for drawing bars
-        Paint barPaint = new Paint();
         barPaint.setColor(themeColor);
         barPaint.setStrokeWidth(5);
 
         // Set up the Paint for drawing text labels
-        Paint textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
         textPaint.setTypeface(Typeface.defaultFromStyle(Typeface.NORMAL));
         textPaint.setTextSize(48);
@@ -74,8 +73,8 @@ public class WeeklyGraphView extends View {
 
         // Draw bars and labels
         for (int i = 0; i < numPoints; i++) {
-            float valueInMeters = dataPoints.get(i);
-            float normalizedValue = (valueInMeters / maxValue) * height;
+            float value = dataPoints.get(i);
+            float normalizedValue = (value / maxValue) * height;
 
             float left = i * barWidth;
             float top = height - normalizedValue;
@@ -86,19 +85,18 @@ public class WeeklyGraphView extends View {
             canvas.drawRect(left, top, right, bottom, barPaint);
 
             // Draw label in the middle of the bar
-            float valueInKilometers = valueInMeters / 1000.0f;
-            String distanceLabel = String.format("%.2f km", valueInKilometers);
+            String caloriesLabel = String.format(Locale.getDefault(), "%d kcal", (int) value);
 
             // Rotate the canvas for vertical text
             canvas.save();
             canvas.rotate(-90, left + (barWidth / 2), (top + bottom) / 2);
 
             // Ensure that the label is within the canvas bounds
-            float labelX = left + (barWidth / 2) - (textPaint.measureText(distanceLabel) / 2);
+            float labelX = left + (barWidth / 2) - (textPaint.measureText(caloriesLabel) / 2);
             float labelY = (top + bottom) / 2;
             labelY = Math.max(labelY, 0);
 
-            canvas.drawText(distanceLabel, labelX, labelY, textPaint);
+            canvas.drawText(caloriesLabel, labelX, labelY, textPaint);
 
             // Restore the canvas to its original orientation
             canvas.restore();
@@ -115,7 +113,6 @@ public class WeeklyGraphView extends View {
         }
     }
 
-
     private String formatDate(Date date) {
         SimpleDateFormat dayFormat = new SimpleDateFormat("EEE", Locale.getDefault()); // Format for day of the week
         String dayOfWeek = dayFormat.format(date);
@@ -127,16 +124,15 @@ public class WeeklyGraphView extends View {
         return dateString.equals(todayString) ? "Today" : dayOfWeek;
     }
 
-
-    private float getMaxValue(List<Float> values) {
-        float max = Float.MIN_VALUE;
-        for (float value : values) {
+    private float getMaxValue(List<Integer> values) {
+        int max = Integer.MIN_VALUE;
+        for (int value : values) {
             max = Math.max(max, value);
         }
         return max;
     }
 
-    public void setDataPoints(List<Float> dataPoints, List<Date> dateList) {
+    public void setDataPoints(List<Integer> dataPoints, List<Date> dateList) {
         // Reverse the order of dataPoints and dateList
         Collections.reverse(dateList);
 
@@ -152,5 +148,4 @@ public class WeeklyGraphView extends View {
         this.themeColor = color;
         invalidate(); // Trigger onDraw
     }
-
 }

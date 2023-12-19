@@ -1,19 +1,20 @@
 package com.example.trailblazer;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ViewPagerAdapter extends FragmentPagerAdapter {
+public class ViewPagerAdapter extends FragmentStateAdapter {
 
     private final List<Fragment> fragmentList = new ArrayList<>();
     private final List<String> fragmentTitles = new ArrayList<>();
 
-    public ViewPagerAdapter(FragmentManager manager) {
-        super(manager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+    public ViewPagerAdapter(FragmentActivity fragmentActivity) {
+        super(fragmentActivity);
     }
 
     public void addFragment(Fragment fragment, String title) {
@@ -22,16 +23,16 @@ public class ViewPagerAdapter extends FragmentPagerAdapter {
     }
 
     @Override
-    public Fragment getItem(int position) {
+    public Fragment createFragment(int position) {
         return fragmentList.get(position);
     }
 
     @Override
-    public int getCount() {
+    public int getItemCount() {
         return fragmentList.size();
     }
 
-    @Override
+    // Optional: If you want to set page titles
     public CharSequence getPageTitle(int position) {
         return fragmentTitles.get(position);
     }
