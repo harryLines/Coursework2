@@ -51,13 +51,11 @@ public class MainActivity extends AppCompatActivity {
             adapter.addFragment(new LoggingFragment(), null);
             adapter.addFragment(new TripsFragment(), null);
             adapter.addFragment(new ProgressFragment(), null);
+            adapter.addFragment(new GoalsFragment(), null);
 
             viewPager.setAdapter(adapter);
 
-            new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-                // Customize tab text or icons if needed
-                // tab.setText("Tab " + (position + 1));
-            }).attach();
+            new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {}).attach();
 
             for (int i = 0; i < tabLayout.getTabCount(); i++) {
                 TabLayout.Tab tab = tabLayout.getTabAt(i);
@@ -81,6 +79,9 @@ public class MainActivity extends AppCompatActivity {
                             break;
                         case 4:
                             tabIcon.setImageResource(R.drawable.progress_tab_icon);
+                            break;
+                        case 5:
+                            tabIcon.setImageResource(R.drawable.goals_tab_icon);
                             break;
                     }
                 }

@@ -1,6 +1,7 @@
 <layout xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <data>
         <variable
             name="viewModel"
@@ -10,6 +11,10 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/linearLayout"
@@ -27,20 +32,22 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="16dp"
                 android:text="Selected Travel Type:"
-                android:textAlignment="textStart" />
+                android:textAlignment="textStart"
+                android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}"/>
 
             <RadioGroup
                 android:id="@+id/trackingTypeGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="12dp"
-                android:layout_weight="1.5">
+                android:layout_weight="1.5"
+                >
 
                 <RadioButton
                     android:id="@+id/radioBtnWalking"
                     style="@style/Regular"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
                     android:layout_weight="1"
                     android:background="@drawable/radio_button_movement_type_design"
                     android:button="@null"
@@ -48,13 +55,14 @@
                     android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setWalkingChecked(isChecked)}"
                     android:text="Walking"
                     android:textAlignment="center"
-                    android:textSize="34sp" />
+                    android:textSize="34sp"
+                    android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}"/>
 
                 <RadioButton
                     android:id="@+id/radioBtnRunning"
                     style="@style/Regular"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
                     android:layout_weight="1"
                     android:background="@drawable/radio_button_movement_type_design"
                     android:button="@null"
@@ -62,13 +70,14 @@
                     android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setRunningChecked(isChecked)}"
                     android:text="Running"
                     android:textAlignment="center"
-                    android:textSize="34sp" />
+                    android:textSize="34sp"
+                    android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}"/>
 
                 <RadioButton
                     android:id="@+id/radioBtnCycling"
                     style="@style/Regular"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
                     android:layout_weight="1"
                     android:background="@drawable/radio_button_movement_type_design"
                     android:button="@null"
@@ -76,21 +85,22 @@
                     android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setCyclingChecked(isChecked)}"
                     android:text="Cycling"
                     android:textAlignment="center"
-                    android:textSize="34sp" />
+                    android:textSize="34sp"
+                    android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}"/>
 
-                <TextClock
-                    android:id="@+id/textClockElapsedTime"
+                <TextView
+                    android:id="@+id/textViewElapsedTime"
                     style="@style/Regular"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
                     android:layout_weight="1"
                     android:gravity="center_horizontal|center_vertical"
                     android:text="@{viewModel.seconds}"
-                    android:textAlignment="center"
                     android:textAppearance="@style/TextAppearance.AppCompat.Body2"
                     android:textSize="48sp"
                     android:textStyle="bold"
-                    android:visibility="gone" />
+                    android:visibility="@{viewModel.isTracking ? android.view.View.VISIBLE : android.view.View.GONE}" />
+
 
             </RadioGroup>
 
@@ -197,6 +207,7 @@
             </LinearLayout>
 
         </LinearLayout>
+        </ScrollView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

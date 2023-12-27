@@ -15,7 +15,11 @@ public class LoggingFragmentViewModel extends ViewModel {
     private MutableLiveData<Boolean> runningChecked = new MutableLiveData<>(false);
     private MutableLiveData<Boolean> cyclingChecked = new MutableLiveData<>(false);
 
-    // Getter methods for LiveData
+    private MutableLiveData<Boolean> isTracking = new MutableLiveData<>(false);
+
+    public MutableLiveData<Boolean> getIsTracking() {
+        return isTracking;
+    }
     public MutableLiveData<Double> getDistance() {
         return distance;
     }
@@ -50,6 +54,9 @@ public class LoggingFragmentViewModel extends ViewModel {
 
     public void setSteps(int stepsValue) {
         steps.setValue(stepsValue);
+    }
+    public void setIsTracking(Boolean value) {
+        isTracking.setValue(value);
     }
 
     public MutableLiveData<Boolean> getWalkingChecked() {

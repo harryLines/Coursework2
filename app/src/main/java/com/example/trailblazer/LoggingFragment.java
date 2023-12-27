@@ -33,6 +33,7 @@ import com.example.trailblazer.databinding.LoggingFragmentBinding;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -77,11 +78,10 @@ public class LoggingFragment extends Fragment {
         currentDistanceTxtView = binding.txtViewDistance;
         movementTypeRadioBtnGroup = binding.trackingTypeGroup;
         textViewNearbySavedLocation = binding.txtViewNearbySavedLocation;
-        textClock = binding.textClockElapsedTime;
+        textClock = binding.textViewElapsedTime;
         textViewSteps = binding.textViewSteps;
         textViewTravelType = binding.textViewTravelType;
         textViewCaloriesBurned = binding.textViewCalories;
-
         RecyclerView recyclerViewReminders = binding.recyclerViewReminders;
 
         reminderAdapter = new ReminderAdapter(new ArrayList<>());
@@ -102,12 +102,8 @@ public class LoggingFragment extends Fragment {
             btnStartTracking.setText("Start Tracking");
 
             // Make radio buttons visible
-            walkingRadioButton.setVisibility(View.VISIBLE);
-            runningRadioButton.setVisibility(View.VISIBLE);
-            cyclingRadioButton.setVisibility(View.VISIBLE);
-            textViewTravelType.setVisibility(View.VISIBLE);
+            viewModel.setIsTracking(false);
 
-            textClock.setVisibility(View.GONE);
             resetValues();
 
         } else {
@@ -116,15 +112,12 @@ public class LoggingFragment extends Fragment {
                 btnStartTracking.setText("Stop Tracking");
 
                 // Make radio buttons invisible
-                walkingRadioButton.setVisibility(View.GONE);
-                runningRadioButton.setVisibility(View.GONE);
-                cyclingRadioButton.setVisibility(View.GONE);
-                textViewTravelType.setVisibility(View.GONE);
+                viewModel.setIsTracking(true);
 
-                textClock.setVisibility(View.VISIBLE);
             }
         }
     }
+
 
     private void showStopTrackingDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
@@ -149,8 +142,6 @@ public class LoggingFragment extends Fragment {
 
         return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, remainingSeconds);
     }
-
-
 
     private void resetValues() {
         viewModel.setDistance(0.0);
