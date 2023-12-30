@@ -15,6 +15,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MainActivity extends AppCompatActivity {
+    private DatabaseManager dbManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
         ViewPager2 viewPager = findViewById(R.id.viewPager);
         TabLayout tabLayout = findViewById(R.id.tabLayout);
+        dbManager = new DatabaseManager(this);
         // Check if there is an intent and if it contains the extra data
         if (getIntent() != null && getIntent().hasExtra("fragmentToShow") || getIntent().hasExtra("stopLogging")) {
             String fragmentTag = getIntent().getStringExtra("fragmentToShow");
@@ -46,12 +48,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
 
             ViewPagerAdapter adapter = new ViewPagerAdapter(this);
-            adapter.addFragment(new HomeFragment(), null);
-            adapter.addFragment(new LocationFragment(), null);
-            adapter.addFragment(new LoggingFragment(), null);
-            adapter.addFragment(new TripsFragment(), null);
-            adapter.addFragment(new ProgressFragment(), null);
-            adapter.addFragment(new GoalsFragment(), null);
+            adapter.addFragment(new HomeFragment(dbManager), null);
+            adapter.addFragment(new LocationFragment(dbManager), null);
+            adapter.addFragment(new LoggingFragment(dbManager), null);
+            adapter.addFragment(new TripsFragment(dbManager), null);
+            adapter.addFragment(new ProgressFragment(dbManager), null);
+            adapter.addFragment(new GoalsFragment(dbManager), null);
 
             viewPager.setAdapter(adapter);
 
@@ -128,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
             // Open SettingsActivity
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
+            dbManager.close();
             finish();
             return true;
         }

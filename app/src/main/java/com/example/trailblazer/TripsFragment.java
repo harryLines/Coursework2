@@ -44,8 +44,9 @@ public class TripsFragment extends Fragment{
     private GoogleMap googleMap;
     private ArrayAdapter<Trip> tripAdapter;
     View view;
-    public TripsFragment() {
-
+    private DatabaseManager dbManager;
+    public TripsFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
 
     @Override
@@ -82,8 +83,6 @@ public class TripsFragment extends Fragment{
 
         MapsInitializer.initialize(getContext());
 
-        // Set the capture image click listener for the adapter
-
         return view;
     }
 
@@ -93,10 +92,9 @@ public class TripsFragment extends Fragment{
 
         try {
             // Initialize your DatabaseManager
-            DatabaseManager databaseManager = new DatabaseManager(requireContext());
 
             // Load trip history from the database
-            tripHistory = databaseManager.loadTripHistory();
+            tripHistory = dbManager.loadTripHistory();
 
             Log.d("TRIP LOAD", "Number of trips loaded from the database: " + tripHistory.size());
 
@@ -135,8 +133,7 @@ public class TripsFragment extends Fragment{
 
             List<Double> elevationData = trip.getElevationData();
 
-            DatabaseManager databaseManager = new DatabaseManager(requireContext());
-            List<SavedLocation> savedLocations = databaseManager.loadSavedLocations();
+            List<SavedLocation> savedLocations = dbManager.loadSavedLocations();
 
             mapView.getMapAsync(googleMap -> {
                 for (SavedLocation savedLocation : savedLocations) {
@@ -215,8 +212,7 @@ public class TripsFragment extends Fragment{
 
     private void showRemindersForLocation(String locationName) {
         // Get reminders for the specified location name from the database
-        DatabaseManager databaseManager = new DatabaseManager(requireContext());
-        List<String> reminders = databaseManager.loadRemindersForLocationName(locationName);
+        List<String> reminders = dbManager.loadRemindersForLocationName(locationName);
 
         // Create a StringBuilder to build the reminder message
         StringBuilder reminderMessage = new StringBuilder();

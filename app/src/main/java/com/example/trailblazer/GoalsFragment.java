@@ -5,25 +5,30 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Spinner;
 
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-
 import com.example.trailblazer.databinding.GoalsFragmentBinding;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class GoalsFragment extends Fragment {
     GoalsFragmentViewModel viewModel;
     GoalsFragmentBinding binding;
     Button btnAddGoal;
+    DatabaseManager dbManager;
 
-    public GoalsFragment() {
+    public GoalsFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
 
     @Override
@@ -31,31 +36,32 @@ public class GoalsFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         binding = DataBindingUtil.inflate(inflater, R.layout.goals_fragment, container, false);
-
         viewModel = new ViewModelProvider(this).get(GoalsFragmentViewModel.class);
+        btnAddGoal = binding.btnCreateGoal;
 
         // Bind the ViewModel to the layout
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(this);
+        viewModel.setGoalsList(getGoalsFromDatabase());
 
         // Observe changes in the LiveData and update the adapter
-        viewModel.getGoalsList().observe(getViewLifecycleOwner(), new Observer<List<Goal>>() {
-            @Override
-            public void onChanged(List<Goal> goals) {
-                GoalsAdapter adapter = new GoalsAdapter(goals);
-                binding.recyclerView.setAdapter(adapter);
-            }
+        viewModel.getGoalsList().observe(getViewLifecycleOwner(), goals -> {
+            GoalsAdapter adapter = new GoalsAdapter(goals);
+            binding.recyclerView.setAdapter(adapter);
         });
 
-        btnAddGoal.setOnClickListener(v -> {
-            showAddGoalDialog();
-        });
-
+        btnAddGoal.setOnClickListener(v -> showAddGoalDialog());
 
         return binding.getRoot();
     }
 
+    private List<Goal> getGoalsFromDatabase() {
+        return dbManager.loadGoals();
+    }
+
     private void showAddGoalDialog() {
+        final int[] metricType = {0};
+        final int[] timeframeType = {0};
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_goal, null);
         builder.setView(dialogView);
@@ -75,15 +81,49 @@ public class GoalsFragment extends Fragment {
         unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         Spinner timeframeSpinner = dialogView.findViewById(R.id.spinnerTimeframeType); // Replace with your actual Spinner ID
-        Spinner unitSpinner = dialogView.findViewById(R.id.spinnerTargetUnits); // Replace with your actual Spinner ID
+        Spinner metricSpinner = dialogView.findViewById(R.id.spinnerTargetUnits); // Replace with your actual Spinner ID
+        EditText editTextNumOfTimeframes = dialogView.findViewById(R.id.editTextTimeframe);
+        EditText editTextTarget = dialogView.findViewById(R.id.editTextTarget);
 
         timeframeSpinner.setAdapter(timeframeAdapter);
-        unitSpinner.setAdapter(unitAdapter);
+        metricSpinner.setAdapter(unitAdapter);
+
+        timeframeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                timeframeType[0] = position;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // Handle the case where nothing is selected
+            }
+        });
+
+        metricSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                metricType[0] = position;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // Handle the case where nothing is selected
+            }
+        });
+
         builder.setTitle("Add New Goal");
 
         // Set up the positive button (Add)
         builder.setPositiveButton("Add", (dialog, which) -> {
-            //String locationName = etLocationName.getText().toString().trim();
+            int numOfTimeframes = Integer.parseInt(editTextNumOfTimeframes.getText().toString());
+            double target = Double.parseDouble(editTextTarget.getText().toString());
+
+            Date currentDate = new Date();
+            // Define the desired date format
+            Goal newGoal = new Goal(0,metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
+
+            dbManager.addNewGoal(newGoal);
         });
 
         // Set up the negative button (Cancel)

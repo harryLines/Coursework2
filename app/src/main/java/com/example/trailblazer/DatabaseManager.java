@@ -24,7 +24,7 @@ import java.util.Locale;
 public class DatabaseManager extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "trailBlazerDatabase.db";
-    private static final int DATABASE_VERSION = 8;
+    private static final int DATABASE_VERSION = 10;
     // Saved locations table
     public static final String TABLE_SAVED_LOCATIONS = "saved_locations";
     public static final String COLUMN_LOCATION_ID = "_id";
@@ -48,6 +48,16 @@ public class DatabaseManager extends SQLiteOpenHelper {
     public static final String COLUMN_IMAGE_PATH = "image_path";
     public static final String COLUMN_ELEVATION_DATA = "elevation_data";
     public static final String COLUMN_CALORIES_BURNED = "calories_burned";
+
+    //Goals table
+    public static final String TABLE_GOALS = "goals";
+    public static final String COLUMN_GOAL_ID = "_id";
+    public static final String COLUMN_METRIC_TYPE = "metric_type";
+    public static final String COLUMN_NUMBER_OF_TIMEFRAMES = "number_of_timeframes";
+    public static final String COLUMN_TIMEFRAME_TYPE = "timeframe_type";
+    public static final String COLUMN_PROGRESS = "progress";
+    public static final String COLUMN_TARGET = "target";
+    public static final String COLUMN_DATE_CREATED = "date_created";
 
     private static final String CREATE_TRIP_HISTORY_TABLE =
             "CREATE TABLE " + TABLE_TRIP_HISTORY + " (" +
@@ -74,16 +84,26 @@ public class DatabaseManager extends SQLiteOpenHelper {
                     COLUMN_REMINDER_LOCATION_ID + " INTEGER, " +
                     COLUMN_REMINDER_TEXT + " TEXT);";
 
+    private static final String CREATE_GOALS_TABLE =
+            "CREATE TABLE " + TABLE_GOALS + " (" +
+                    COLUMN_GOAL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    COLUMN_NUMBER_OF_TIMEFRAMES + " INTEGER, " +
+                    COLUMN_TIMEFRAME_TYPE + " INT," +
+                    COLUMN_PROGRESS + " INTEGER, " +
+                    COLUMN_TARGET + " INTEGER, " +
+                    COLUMN_DATE_CREATED + " TEXT, " +
+                    COLUMN_METRIC_TYPE + " INT);";
+
     public DatabaseManager(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create the saved locations table
         db.execSQL(CREATE_SAVED_LOCATIONS_TABLE);
 
-        // Create the reminders table
+        db.execSQL(CREATE_GOALS_TABLE);
+
         db.execSQL(CREATE_REMINDERS_TABLE);
 
         db.execSQL(CREATE_TRIP_HISTORY_TABLE);
@@ -95,7 +115,83 @@ public class DatabaseManager extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SAVED_LOCATIONS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_REMINDERS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_TRIP_HISTORY);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_GOALS);
         onCreate(db);
+    }
+
+    public List<Goal> loadGoals() {
+        List<Goal> goalsList = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor cursor = db.query(TABLE_GOALS,
+                new String[]{COLUMN_GOAL_ID, COLUMN_NUMBER_OF_TIMEFRAMES, COLUMN_TIMEFRAME_TYPE, COLUMN_PROGRESS, COLUMN_TARGET, COLUMN_METRIC_TYPE, COLUMN_DATE_CREATED},
+                null, null, null, null, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                @SuppressLint("Range") long goalId = cursor.getLong(cursor.getColumnIndex(COLUMN_GOAL_ID));
+                @SuppressLint("Range") int numberOfTimeframes = cursor.getInt(cursor.getColumnIndex(COLUMN_NUMBER_OF_TIMEFRAMES));
+                @SuppressLint("Range") int timeframeType = cursor.getInt(cursor.getColumnIndex(COLUMN_TIMEFRAME_TYPE));
+                @SuppressLint("Range") int progress = cursor.getInt(cursor.getColumnIndex(COLUMN_PROGRESS));
+                @SuppressLint("Range") int target = cursor.getInt(cursor.getColumnIndex(COLUMN_TARGET));
+                @SuppressLint("Range") int metricType = cursor.getInt(cursor.getColumnIndex(COLUMN_METRIC_TYPE));
+                @SuppressLint("Range") String dateCreated = cursor.getString(cursor.getColumnIndex(COLUMN_DATE_CREATED));
+
+                Goal goalItem = new Goal(goalId, metricType, numberOfTimeframes, timeframeType, progress, target, parseDateFromString(dateCreated));
+                goalsList.add(goalItem);
+
+            } while (cursor.moveToNext());
+
+            cursor.close();
+            for (Goal goal : goalsList) {
+                Log.d("Goal", String.valueOf(goal.getMetricType()));
+            }
+        }
+
+        db.close();
+
+        return goalsList;
+    }
+
+    private Date parseDateFromString(String dateString) {
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.US);
+            return dateFormat.parse(dateString);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null; // Handle the exception as needed
+        }
+    }
+    public void updateGoals(List<Goal> updatedGoals) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        try {
+            db.beginTransaction();
+
+            for (Goal updatedGoal : updatedGoals) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_NUMBER_OF_TIMEFRAMES, updatedGoal.getNumberOfTimeframes());
+                values.put(COLUMN_TIMEFRAME_TYPE, updatedGoal.getTimeframeType());
+                values.put(COLUMN_PROGRESS, updatedGoal.getProgress());
+                values.put(COLUMN_TARGET, updatedGoal.getTarget());
+                values.put(COLUMN_METRIC_TYPE, updatedGoal.getMetricType());
+                values.put(COLUMN_DATE_CREATED, updatedGoal.getDateCreated().toString());
+
+                // Update the goal in the database
+                db.update(
+                        TABLE_GOALS,
+                        values,
+                        COLUMN_GOAL_ID + " = ?",
+                        new String[]{String.valueOf(updatedGoal.getGoalID())}
+                );
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
     }
 
     public List<Trip> loadTripHistory() throws ParseException {
@@ -292,10 +388,24 @@ public class DatabaseManager extends SQLiteOpenHelper {
         return reminders;
     }
 
+    public void addNewGoal(Goal goal) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_NUMBER_OF_TIMEFRAMES, goal.getNumberOfTimeframes());
+        values.put(COLUMN_TIMEFRAME_TYPE, goal.getTimeframeType());
+        values.put(COLUMN_PROGRESS, goal.getProgress());
+        values.put(COLUMN_TARGET, goal.getTarget());
+        values.put(COLUMN_METRIC_TYPE, goal.getMetricType());
+        values.put(COLUMN_DATE_CREATED,goal.getDateCreated().toString());
+
+        db.insert(TABLE_GOALS, null, values);
+        db.close();
+    }
+
     public void deleteTripHistory() {
         SQLiteDatabase db = getWritableDatabase();
         db.delete(TABLE_TRIP_HISTORY, null, null);
         db.close();
     }
-
 }

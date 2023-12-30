@@ -26,8 +26,9 @@ import java.util.Locale;
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
     private String prevSelectedTimeframe = "1 Week";
-    public ProgressFragment() {
-        // Required empty public constructor
+    private DatabaseManager dbManager;
+    public ProgressFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
 
     @Override

@@ -10,10 +10,10 @@ import androidx.fragment.app.Fragment;
 
 public class ClearDataFragment extends Fragment {
     Button clearTripHistory;
-    public ClearDataFragment() {
-
+    private DatabaseManager dbManager;
+    public ClearDataFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -22,8 +22,10 @@ public class ClearDataFragment extends Fragment {
         clearTripHistory = view.findViewById(R.id.btnClearTripHistory);
 
         clearTripHistory.setOnClickListener(v -> {
-            DatabaseManager dbManager = new DatabaseManager(requireContext());
-            dbManager.deleteTripHistory();
+            // Use the injected DatabaseManager
+            if (dbManager != null) {
+                dbManager.deleteTripHistory();
+            }
         });
 
         return view;

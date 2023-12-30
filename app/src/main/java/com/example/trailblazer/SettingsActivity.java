@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 public class SettingsActivity extends AppCompatActivity {
-
+    private DatabaseManager dbManager;
     // Load the selected theme from SharedPreferences
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,7 +18,8 @@ public class SettingsActivity extends AppCompatActivity {
         int currentTheme = ThemeManager.getSelectedTheme(getApplicationContext());
         ThemeManager.applyTheme(this, currentTheme);
         setContentView(R.layout.activity_settings);
-        loadFragment(new SettingsFragment());
+        dbManager = new DatabaseManager(this);
+        loadFragment(new SettingsFragment(dbManager));
     }
 
     void loadFragment(Fragment fragment) {
@@ -57,6 +58,7 @@ public class SettingsActivity extends AppCompatActivity {
             // Finish the activity if the current fragment is SettingsFragment
             Intent intent = new Intent(this, MainActivity.class);
             startActivity(intent);
+            dbManager.close();
             finish();
         } else {
             // Otherwise, let the default behavior handle the back button press

@@ -56,8 +56,9 @@ public class LoggingFragment extends Fragment {
     String savedLocationReminders;
     private ReminderAdapter reminderAdapter;
     private LoggingFragmentViewModel viewModel;
-    public LoggingFragment() {
-
+    private DatabaseManager dbManager;
+    public LoggingFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
 
     @Override
@@ -86,7 +87,6 @@ public class LoggingFragment extends Fragment {
 
         reminderAdapter = new ReminderAdapter(new ArrayList<>());
         recyclerViewReminders.setAdapter(reminderAdapter);
-
         btnStartTracking.setOnClickListener(v -> toggleService());
 
         return binding.getRoot();
@@ -97,6 +97,7 @@ public class LoggingFragment extends Fragment {
         // Check if the service is already running
         if (isServiceRunning()) {
             // The service is running, so stop it
+            updateGoals();
             stopService();
             showStopTrackingDialog();
             btnStartTracking.setText("Start Tracking");
@@ -123,9 +124,46 @@ public class LoggingFragment extends Fragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
         builder.setTitle("Tracking Stopped")
                 .setMessage(getCurrentValuesMessage())
-                .setPositiveButton("OK", (dialog, which) -> resetValues())
+                .setPositiveButton("OK", (dialog, which) -> {
+                    resetValues();
+                })
                 .show();
     }
+
+    private void updateGoals() {
+        List<Goal> currentGoals = dbManager.loadGoals();
+
+        if (currentGoals != null) {
+            double burnedCalories = viewModel.getCalories().getValue();
+            double distanceCovered = viewModel.getDistance().getValue(); // Assuming distance is the metric for kilometers goal
+            int stepsTaken = viewModel.getSteps().getValue(); // Assuming steps is the metric for steps goal
+
+            // Iterate through the goals and update them
+            for (Goal goal : currentGoals) {
+                switch (goal.getMetricType()) {
+                    case Goal.METRIC_CALORIES:
+                        goal.setProgress(goal.getProgress() + burnedCalories);
+                        Log.d("Goal Update", "Calories goal updated. New progress: " + goal.getProgress() + "ADDED:");
+                        break;
+                    case Goal.METRIC_KILOMETERS:
+                        goal.setProgress(goal.getProgress() + distanceCovered);
+                        Log.d("Goal Update", "Distance goal updated. New progress: " + goal.getProgress());
+                        break;
+                    case Goal.METRIC_STEPS:
+                        goal.setProgress(goal.getProgress() + stepsTaken);
+                        Log.d("Goal Update", "Steps goal updated. New progress: " + goal.getProgress());
+                        break;
+                    default:
+                        Log.w("Goal Update", "Unsupported metric type: " + goal.getMetricType());
+                }
+            }
+
+            // Save the updated goals back to the database
+            dbManager.updateGoals(currentGoals);
+            Log.d("Goal Update", "Goals updated and saved to the database.");
+        }
+    }
+
 
     private String getCurrentValuesMessage() {
         String distance = "Distance: " + viewModel.getDistance().getValue() + " km\n";

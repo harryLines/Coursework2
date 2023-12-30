@@ -15,10 +15,12 @@ import java.util.List;
 
 
 public class DatabaseTripInsertWorker extends Worker {
+    private DatabaseManager dbManager;
     public DatabaseTripInsertWorker(
             @NonNull Context context,
-            @NonNull WorkerParameters params) {
+            @NonNull WorkerParameters params, DatabaseManager dbManager) {
         super(context, params);
+        this.dbManager = dbManager;
     }
 
     @NonNull
@@ -39,8 +41,7 @@ public class DatabaseTripInsertWorker extends Worker {
         Trip trip = new Trip(new Date(startTimeMillis), 0, totalDistance, movementType, elapsedMillis / 1000, routePoints,elevationData,caloriesBurned);
 
         // Initialize DatabaseManager and insert the trip into the database
-        DatabaseManager databaseManager = new DatabaseManager(getApplicationContext());
-        databaseManager.insertTripHistory(trip);
+        dbManager.insertTripHistory(trip);
 
         return Result.success();
     }

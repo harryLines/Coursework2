@@ -28,7 +28,6 @@
     <string-array name="metric_units">
         <item>Calories</item>
         <item>Kilometers</item>
-        <item>Speed</item>
         <item>Steps</item>
     </string-array>
 

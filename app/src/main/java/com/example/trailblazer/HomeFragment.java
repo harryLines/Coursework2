@@ -42,14 +42,11 @@ public class HomeFragment extends Fragment {
     private boolean prevWalkingChecked = true;
     private boolean prevRunningChecked = false;
     private boolean prevCyclingChecked = false;
-    public HomeFragment() {
+    private DatabaseManager dbManager;
+    public HomeFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
 
-    private List<Trip> loadTripHistory() throws ParseException {
-        // Use the DatabaseManager to load trip history from the SQLite database
-        DatabaseManager databaseManager = new DatabaseManager(getContext());
-        return databaseManager.loadTripHistory();
-    }
     private double calculateAverageSpeed(List<Trip> trips, int movementType) {
         double totalSpeed = 0.0;
         int count = 0;
@@ -249,7 +246,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateGraph() throws ParseException {
-        List<Trip> tripHistory = loadTripHistory();
+        List<Trip> tripHistory = dbManager.loadTripHistory();
         List<Trip> selectedTrips = new ArrayList<>();
         Set<String> selectedMovementTypes = new HashSet<>();
         // Filter the trips based on checkbox selections

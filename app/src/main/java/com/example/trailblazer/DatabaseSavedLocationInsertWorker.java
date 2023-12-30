@@ -8,11 +8,13 @@ import androidx.work.WorkerParameters;
 import com.google.android.gms.maps.model.LatLng;
 
 public class DatabaseSavedLocationInsertWorker extends Worker {
+    private DatabaseManager dbManager;
 
     public DatabaseSavedLocationInsertWorker(
             @NonNull android.content.Context context,
-            @NonNull WorkerParameters params) {
+            @NonNull WorkerParameters params, DatabaseManager dbManager) {
         super(context, params);
+        this.dbManager = dbManager;
     }
 
     @NonNull
@@ -36,10 +38,7 @@ public class DatabaseSavedLocationInsertWorker extends Worker {
     }
 
     private long saveLocationToDatabase(String locationName, double latitude, double longitude) {
-        // Initialize your DatabaseManager
-        DatabaseManager databaseManager = new DatabaseManager(getApplicationContext());
-
         // Save the location to the database and get the locationId
-        return databaseManager.saveLocation(locationName, new LatLng(latitude, longitude));
+        return dbManager.saveLocation(locationName, new LatLng(latitude, longitude));
     }
 }

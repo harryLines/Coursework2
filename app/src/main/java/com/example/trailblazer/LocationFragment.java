@@ -44,9 +44,10 @@ public class LocationFragment extends Fragment {
     private List<SavedLocation> savedLocations;
     private PlacesClient placesClient;
     private Button btnSaveLocation;
+    private DatabaseManager dbManager;
 
-    public LocationFragment() {
-        // Required empty public constructor
+    public LocationFragment(DatabaseManager dbManager) {
+        this.dbManager = dbManager;
     }
 
     @Override
@@ -252,12 +253,8 @@ public class LocationFragment extends Fragment {
 
     private List<SavedLocation> loadSavedLocations() {
         List<SavedLocation> savedLocations = new ArrayList<>();
-
-        // Initialize your DatabaseManager
-        DatabaseManager databaseManager = new DatabaseManager(requireContext());
-
         // Load saved locations from the database
-        savedLocations = databaseManager.loadSavedLocations();
+        savedLocations = dbManager.loadSavedLocations();
 
         return savedLocations;
     }
