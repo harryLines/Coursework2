@@ -5,14 +5,14 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 public class HomeFragmentViewModel extends ViewModel {
-    private MutableLiveData<Boolean> walkingChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Boolean> runningChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Boolean> cyclingChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Boolean> distanceChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Boolean> caloriesChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Double> avgWalkSpeed = new MutableLiveData<>(0.0);
-    private MutableLiveData<Double> avgRunSpeed = new MutableLiveData<>(0.0);
-    private MutableLiveData<Double> avgCycleSpeed = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Boolean> walkingChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> runningChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> cyclingChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> distanceChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> caloriesChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Double> avgWalkSpeed = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Double> avgRunSpeed = new MutableLiveData<>(0.0);
+    private final MutableLiveData<Double> avgCycleSpeed = new MutableLiveData<>(0.0);
 
     // Getter methods for LiveData
     public LiveData<Boolean> isWalkingChecked() {

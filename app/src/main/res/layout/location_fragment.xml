@@ -7,7 +7,6 @@
     tools:context=".LocationFragment">
 
     <LinearLayout
-        android:id="@+id/linearLayout2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"

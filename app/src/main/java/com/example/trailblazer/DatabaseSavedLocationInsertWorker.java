@@ -8,13 +8,13 @@ import androidx.work.WorkerParameters;
 import com.google.android.gms.maps.model.LatLng;
 
 public class DatabaseSavedLocationInsertWorker extends Worker {
-    private DatabaseManager dbManager;
+    private final DatabaseManager dbManager;
 
     public DatabaseSavedLocationInsertWorker(
             @NonNull android.content.Context context,
             @NonNull WorkerParameters params) {
         super(context, params);
-        dbManager = new DatabaseManager(context);
+        dbManager = DatabaseManager.getInstance(context);
     }
 
     @NonNull

@@ -12,6 +12,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Objects;
+
 public class Provider extends ContentProvider {
     private static final int URI_SAVED_LOCATIONS = 1;
     private static final int URI_REMINDERS = 2;
@@ -27,7 +29,7 @@ public class Provider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        dbManager = new DatabaseManager(getContext());
+        dbManager = DatabaseManager.getInstance(requireContext());
         return true;
     }
 
@@ -52,7 +54,7 @@ public class Provider extends ContentProvider {
         }
 
         // Notify the content resolver about changes in the data
-        cursor.setNotificationUri(getContext().getContentResolver(), uri);
+        cursor.setNotificationUri(Objects.requireNonNull(getContext()).getContentResolver(), uri);
         return cursor;
     }
 
@@ -76,7 +78,7 @@ public class Provider extends ContentProvider {
         }
 
         // Notify the content resolver about changes in the data
-        getContext().getContentResolver().notifyChange(uri, null);
+        Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
 
         return ContentUris.withAppendedId(uri, id);
     }

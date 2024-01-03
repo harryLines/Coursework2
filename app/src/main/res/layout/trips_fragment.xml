@@ -3,8 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+<!--    mapContainer.setVisibility(View.GONE);
+            listView.setVisibility(View.VISIBLE);
+            backButton.setVisibility(View.GONE); // Hide back button in list view
+            lineChartLayout.setVisibility(View.GONE);-->
+
     <FrameLayout
-        android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/transparent">
@@ -41,12 +45,12 @@
 
                 <Button
                     android:id="@+id/backButton"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|start"
-                    android:elevation="10dp"
                     android:background="@drawable/button_design"
-                    android:text="Back" />
+                    android:elevation="10dp"
+                    android:text="Back to trip history" />
 
             </FrameLayout>
 
@@ -64,7 +68,6 @@
                     android:layout_height="match_parent" />
 
             </LinearLayout>
-
 
         </LinearLayout>
 

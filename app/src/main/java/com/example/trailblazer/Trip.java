@@ -8,7 +8,6 @@ import java.util.List;
 public class Trip {
     private Date date;
     private long timeInSeconds;
-    private long tripID;
     private int movementType;
     public static final int MOVEMENT_WALK = 0;
     public static final int MOVEMENT_RUN = 1;
@@ -16,7 +15,7 @@ public class Trip {
     private double distance;
     private int caloriesBurned;
     private List<Double> elevationData;
-    List<LatLng> route;
+    final List<LatLng> route;
 
     public int getCaloriesBurned() {
         return caloriesBurned;
@@ -28,7 +27,6 @@ public class Trip {
 
     public Trip(Date date, long tripID, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories) {
         this.date = date;
-        this.tripID = tripID;
         this.movementType = movementType;
         this.distance = distance;
         this.timeInSeconds = time;

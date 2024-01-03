@@ -11,7 +11,7 @@ import com.example.trailblazer.databinding.GoalListItemLayoutBinding;
 import java.util.List;
 
 public class GoalsAdapter extends RecyclerView.Adapter<GoalsAdapter.ViewHolder> {
-    private List<Goal> goals;
+    private final List<Goal> goals;
 
     public GoalsAdapter(List<Goal> goals) {
         this.goals = goals;

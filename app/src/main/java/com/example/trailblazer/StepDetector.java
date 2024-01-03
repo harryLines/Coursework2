@@ -7,7 +7,6 @@ public class StepDetector implements SensorEventListener {
 
     private static final float STEP_THRESHOLD = 12.0f; // Adjust this threshold based on your device and user's walking pattern
     private static final int STEP_DELAY_MILLIS = 500; // Minimum time between steps (adjust as needed)
-
     private long lastStepTimestamp = 0;
 
     public int getStepCount() {
@@ -16,7 +15,7 @@ public class StepDetector implements SensorEventListener {
 
     private int stepCount = 0;
 
-    private StepListener stepListener;
+    private final StepListener stepListener;
 
     public StepDetector(StepListener listener) {
         this.stepListener = listener;

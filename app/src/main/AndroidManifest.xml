@@ -35,7 +35,8 @@
             android:name=".MovementTrackerService"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="location|dataSync" />
+            android:foregroundServiceType="location|dataSync"
+            android:permission="TODO" />
 
         <activity
             android:name=".MainActivity"
@@ -48,7 +49,7 @@
         </activity>
         <activity
             android:name=".SettingsActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -61,6 +62,7 @@
             android:exported="true"
             android:readPermission="com.example.TrailBlazer.READ_DATA"
             android:writePermission="com.example.TrailBlazer.WRITE_DATA" />
+
     </application>
 
 </manifest>

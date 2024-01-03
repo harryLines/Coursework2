@@ -42,9 +42,7 @@ public class HomeFragment extends Fragment {
     private boolean prevWalkingChecked = true;
     private boolean prevRunningChecked = false;
     private boolean prevCyclingChecked = false;
-    private DatabaseManager dbManager;
-    public HomeFragment(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+    public HomeFragment() {
     }
 
     private double calculateAverageSpeed(List<Trip> trips, int movementType) {
@@ -145,7 +143,7 @@ public class HomeFragment extends Fragment {
         });
 
         checkBoxDistance.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked && !viewModel.isDistanceChecked().getValue()) {
+            if (isChecked && Boolean.FALSE.equals(viewModel.isDistanceChecked().getValue())) {
                 weeklyGraphViewDistance.setVisibility(View.VISIBLE);
                 weeklyGraphViewCalories.setVisibility(View.GONE);
                 viewModel.setCaloriesChecked(false);
@@ -159,7 +157,7 @@ public class HomeFragment extends Fragment {
         });
 
         checkboxCalories.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked && !viewModel.isCaloriesChecked().getValue()) {
+            if (isChecked && Boolean.FALSE.equals(viewModel.isCaloriesChecked().getValue())) {
                 weeklyGraphViewDistance.setVisibility(View.GONE);
                 weeklyGraphViewCalories.setVisibility(View.VISIBLE);
                 viewModel.setDistanceChecked(false);
@@ -204,6 +202,11 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        try {
+            updateGraph();
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<Trip> filterTripsLastWeek(List<Trip> trips) {
@@ -246,24 +249,24 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateGraph() throws ParseException {
-        List<Trip> tripHistory = dbManager.loadTripHistory();
+        List<Trip> tripHistory = DatabaseManager.getInstance(requireContext()).loadTripHistory();
         List<Trip> selectedTrips = new ArrayList<>();
         Set<String> selectedMovementTypes = new HashSet<>();
         // Filter the trips based on checkbox selections
         for (Trip trip : tripHistory) {
             switch (trip.getMovementType()) {
                 case Trip.MOVEMENT_WALK:
-                    if (viewModel.isWalkingChecked().getValue()) {
+                    if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
                         selectedTrips.add(trip);
                     }
                     break;
                 case Trip.MOVEMENT_RUN:
-                    if (viewModel.isRunningChecked().getValue()) {
+                    if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
                         selectedTrips.add(trip);
                     }
                     break;
                 case Trip.MOVEMENT_CYCLE:
-                    if (viewModel.isCyclingChecked().getValue()) {
+                    if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
                         selectedTrips.add(trip);
                     }
                     break;
@@ -305,13 +308,13 @@ public class HomeFragment extends Fragment {
         viewModel.setAvgRunSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_RUN));
         viewModel.setAvgCycleSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_CYCLE));
 
-        if (viewModel.isWalkingChecked().getValue()) {
+        if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
             selectedMovementTypes.add("Walking");
         }
-        if (viewModel.isRunningChecked().getValue()) {
+        if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
             selectedMovementTypes.add("Running");
         }
-        if (viewModel.isCyclingChecked().getValue()) {
+        if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
             selectedMovementTypes.add("Cycling");
         }
     }

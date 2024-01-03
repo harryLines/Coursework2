@@ -4,15 +4,18 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -62,8 +66,7 @@ public class LoggingFragment extends Fragment {
     private LoggingFragmentViewModel viewModel;
     private DatabaseManager dbManager;
 
-    public LoggingFragment(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+    public LoggingFragment() {
     }
 
     @Override
@@ -71,6 +74,7 @@ public class LoggingFragment extends Fragment {
                              Bundle savedInstanceState) {
         LoggingFragmentBinding binding = DataBindingUtil.inflate(inflater, R.layout.logging_fragment, container, false);
 
+        this.dbManager = DatabaseManager.getInstance(requireContext());
         viewModel = new ViewModelProvider(this).get(LoggingFragmentViewModel.class);
 
         // Bind the ViewModel to the layout
@@ -111,18 +115,46 @@ public class LoggingFragment extends Fragment {
             viewModel.setIsTracking(false);
 
             resetValues();
-
         } else {
-            // The service is not running, so start it
-            if (startService()) {
-                btnStartTracking.setText("Stop Tracking");
+            // The service is not running, so check for location permission
+            if (checkLocationPermission()) {
+                // Location permission granted, start the service
+                if (startService()) {
+                    btnStartTracking.setText("Stop Tracking");
 
-                // Make radio buttons invisible
-                viewModel.setIsTracking(true);
-
+                    // Make radio buttons invisible
+                    viewModel.setIsTracking(true);
+                }
+            } else {
+                // Location permission not granted, show a dialog requesting permission
+                showLocationPermissionDialog();
             }
         }
     }
+
+    private boolean checkLocationPermission() {
+        return ActivityCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void showLocationPermissionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Location Permissions Required")
+                .setMessage("Location permissions are needed to start tracking. Please grant the location permission in the app settings.")
+                .setPositiveButton("Grant Permissions", (dialog, which) -> {
+                    // Open app settings to allow the user to grant permissions
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", requireActivity().getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    // Handle the case where the user cancels the permission request
+                    Toast.makeText(getContext(), "Tracking requires location permissions.", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
 
 
     private void showStopTrackingDialog() {
@@ -203,30 +235,31 @@ public class LoggingFragment extends Fragment {
         // Create an intent for your service
         Intent serviceIntent = new Intent(getActivity(), MovementTrackerService.class);
 
-        if (viewModel.getWalkingChecked().getValue()) {
+        if (Boolean.TRUE.equals(viewModel.getWalkingChecked().getValue())) {
             serviceIntent.putExtra("movementType", 0);
-        } else if (viewModel.getRunningChecked().getValue()) {
+        } else if (Boolean.TRUE.equals(viewModel.getRunningChecked().getValue())) {
             serviceIntent.putExtra("movementType", 1);
-        } else if (viewModel.getCyclingChecked().getValue()) {
+        } else if (Boolean.TRUE.equals(viewModel.getCyclingChecked().getValue())) {
             serviceIntent.putExtra("movementType", 2);
         } else {
             showMovementTypeAlert();
             return false; // Stop further execution
         }
 
-        getActivity().startForegroundService(serviceIntent);
+        requireActivity().startForegroundService(serviceIntent);
         return true;
     }
 
     // Method to stop the service
     private void stopService() {
         Intent serviceIntent = new Intent(getActivity(), MovementTrackerService.class);
-        getActivity().stopService(serviceIntent);
+        requireActivity().stopService(serviceIntent);
     }
 
     // Method to check if a service is running
+    @SuppressWarnings("deprecation")
     private boolean isServiceRunning() {
-        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager manager = (ActivityManager) requireActivity().getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (MovementTrackerService.class.getName().equals(service.service.getClassName())) {
                 return true;
@@ -243,10 +276,10 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
-    private BroadcastReceiver movementUpdateReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver movementUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MovementTrackerService.ACTION_DISTANCE_UPDATE)) {
+            if (Objects.requireNonNull(intent.getAction()).equals(MovementTrackerService.ACTION_DISTANCE_UPDATE)) {
                 viewModel.setDistance(intent.getDoubleExtra("distance", viewModel.getDistance().getValue()));
                 Log.d("DISTANCE", String.valueOf(viewModel.getDistance().getValue()));
                 viewModel.setSeconds(intent.getLongExtra("trackingDuration", viewModel.getSeconds().getValue()));
@@ -262,7 +295,7 @@ public class LoggingFragment extends Fragment {
                     }
                     if (intent.getStringExtra("savedLocationReminders") != null) {
                         savedLocationReminders = intent.getStringExtra("savedLocationReminders");
-                        List<String> reminderList = Arrays.asList(savedLocationReminders.split(","));
+                        List<String> reminderList = Arrays.asList(Objects.requireNonNull(savedLocationReminders).split(","));
                         reminderAdapter.setReminders(reminderList);
                     }
                 }

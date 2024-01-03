@@ -25,8 +25,8 @@ import java.util.List;
 // SavedLocationsAdapter.java
 public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAdapter.ViewHolder> {
 
-    private List<SavedLocation> savedLocations;
-    private Context context;
+    private final List<SavedLocation> savedLocations;
+    private final Context context;
 
     public SavedLocationsAdapter(List<SavedLocation> savedLocations, Context context) {
         this.savedLocations = savedLocations;
@@ -97,12 +97,9 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
     }
 
     private void saveRemindersToDatabase(SavedLocation savedLocation) {
-        // Initialize your DatabaseManager
-        DatabaseManager databaseManager = new DatabaseManager(context);
-
         // Save the updated reminders to the database
         for (String reminder : savedLocation.getReminders()) {
-            databaseManager.saveReminder(savedLocation.getLocationID(), reminder);
+            DatabaseManager.getInstance(context).saveReminder(savedLocation.getLocationID(), reminder);
         }
     }
 
@@ -157,7 +154,7 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        private TextView textViewLocationName;
+        private final TextView textViewLocationName;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);

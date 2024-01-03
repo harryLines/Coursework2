@@ -12,7 +12,7 @@ import java.util.List;
 
 public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder> {
 
-    private List<String> reminders;
+    private final List<String> reminders;
 
     public ReminderAdapter(List<String> reminders) {
         this.reminders = reminders;
@@ -41,7 +41,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.Remind
     // ViewHolder class
     public static class ReminderViewHolder extends RecyclerView.ViewHolder {
 
-        private TextView txtReminder;
+        private final TextView txtReminder;
 
         public ReminderViewHolder(@NonNull View itemView) {
             super(itemView);

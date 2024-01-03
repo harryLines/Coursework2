@@ -10,19 +10,17 @@ import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class DatabaseManager extends SQLiteOpenHelper {
-
+    private static DatabaseManager instance;
     private static final String DATABASE_NAME = "trailBlazerDatabase.db";
     private static final int DATABASE_VERSION = 11;
     // Saved locations table
@@ -96,8 +94,15 @@ public class DatabaseManager extends SQLiteOpenHelper {
                     COLUMN_IS_COMPLETE + " INT," +
                     COLUMN_METRIC_TYPE + " INT);";
 
-    public DatabaseManager(Context context) {
+    private DatabaseManager(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    public static synchronized DatabaseManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new DatabaseManager(context.getApplicationContext());
+        }
+        return instance;
     }
 
     @Override
@@ -246,7 +251,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
     }
 
 
-    public long insertTripHistory(Trip trip) {
+    public void insertTripHistory(Trip trip) {
         SQLiteDatabase db = getWritableDatabase();
 
         ContentValues values = new ContentValues();
@@ -262,7 +267,6 @@ public class DatabaseManager extends SQLiteOpenHelper {
 
         db.close();
 
-        return tripId;
     }
 
     private String convertElevationDataToJson(List<Double> elevationData) {

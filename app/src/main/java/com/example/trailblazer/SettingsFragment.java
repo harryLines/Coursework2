@@ -9,9 +9,8 @@ import android.widget.Button;
 import androidx.fragment.app.Fragment;
 
 public class SettingsFragment extends Fragment {
-    private DatabaseManager dbManager;
-    public SettingsFragment(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+
+    public SettingsFragment() {
     }
 
     @Override
@@ -32,7 +31,7 @@ public class SettingsFragment extends Fragment {
 
         btnClearData.setOnClickListener(v -> {
             if (getActivity() instanceof SettingsActivity) {
-                ((SettingsActivity) getActivity()).loadFragment(new ClearDataFragment(dbManager));
+                ((SettingsActivity) getActivity()).loadFragment(new ClearDataFragment());
             }
         });
 

@@ -12,34 +12,28 @@ public class Goal {
     public static final int METRIC_CALORIES = 0;
     public static final int METRIC_KILOMETERS = 1;
     public static final int METRIC_STEPS= 2;
-    int metricType;
-    int numberOfTimeframes;
-    int timeframeType;
+    final int metricType;
+    final int numberOfTimeframes;
+    final int timeframeType;
     double progress;
-    double target;
-    long goalID;
-    Date dateCreated;
+    final double target;
+    final long goalID;
+    final Date dateCreated;
     boolean isComplete;
 
     public long getGoalID() {
         return goalID;
     }
-    public void setGoalID(long goalID) {
-        this.goalID = goalID;
-    }
 
     public Date getDateCreated() {
         return dateCreated;
     }
-    public void setDateCreated(Date dateCreated) {
-        this.dateCreated = dateCreated;
-    }
+
     public void setComplete() {
         isComplete = true;
     }
 
     public String getFormattedDueDate() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         Date dueDate = getDueDate();
         Date currentDate = new Date(); // current date
 
@@ -117,31 +111,6 @@ public class Goal {
         return String.format(formatSpecifier, target, unit);
     }
 
-    public String getProgressWithUnitString() {
-        String unit;
-        String formatSpecifier;
-
-        switch (metricType) {
-            case METRIC_CALORIES:
-                unit = "kcal";
-                formatSpecifier = "%.0f %s"; // Format with no decimal points
-                break;
-            case METRIC_KILOMETERS:
-                unit = "km";
-                formatSpecifier = "%.2f %s"; // Format with two decimal points
-                break;
-            case METRIC_STEPS:
-                unit = "steps";
-                formatSpecifier = "%.0f %s"; // Format with no decimal points
-                break;
-            default:
-                unit = "";
-                formatSpecifier = "%.2f %s"; // Default format with two decimal points
-        }
-
-        return String.format(formatSpecifier, progress, unit);
-    }
-
     public String getMetricTypeAsText() {
         switch (metricType) {
             case METRIC_CALORIES:
@@ -155,24 +124,12 @@ public class Goal {
         }
     }
 
-    public void setMetricType(int metricType) {
-        this.metricType = metricType;
-    }
-
     public int getNumberOfTimeframes() {
         return numberOfTimeframes;
     }
 
-    public void setNumberOfTimeframes(int numberOfTimeframes) {
-        this.numberOfTimeframes = numberOfTimeframes;
-    }
-
     public int getTimeframeType() {
         return timeframeType;
-    }
-
-    public void setTimeframeType(int timeframeType) {
-        this.timeframeType = timeframeType;
     }
 
     public double getProgress() {
@@ -199,7 +156,4 @@ public class Goal {
         return target;
     }
 
-    public void setTarget(double target) {
-        this.target = target;
-    }
 }

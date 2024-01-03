@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Locale;
 
 class TripAdapter extends ArrayAdapter<Trip> {
-    private int resource;
+    private final int resource;
 
     public TripAdapter(Context context, int resource, List<Trip> trips) {
         super(context, resource, trips);

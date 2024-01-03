@@ -20,8 +20,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 
 public class ProfileActivity extends AppCompatActivity {
-
-    private static final int REQUEST_IMAGE_CAPTURE = 1;
     private EditText editTextName;
     private EditText editTextWeight;
     private SharedPreferences sharedPreferences;
@@ -46,6 +44,8 @@ public class ProfileActivity extends AppCompatActivity {
         saveDetailsButton.setOnClickListener(v -> {
             // Save the updated data
             saveUserData();
+            setResult(RESULT_OK);
+            finish();
         });
 
     }
@@ -85,8 +85,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         if (id == R.id.action_back) {
             // Handle the back button press
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+            setResult(RESULT_OK);
             finish();
             return true;
         }

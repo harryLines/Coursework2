@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 import java.util.List;
 
 public class GoalsFragmentViewModel extends ViewModel {
-    private MutableLiveData<List<Goal>> goalsList = new MutableLiveData<>();
+    private final MutableLiveData<List<Goal>> goalsList = new MutableLiveData<>();
     public MutableLiveData<List<Goal>> getGoalsList() {
         return goalsList;
     }

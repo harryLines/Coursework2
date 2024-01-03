@@ -18,7 +18,6 @@
             android:layout_weight="0.5">
 
             <TextView
-                android:id="@+id/textViewTimeFrameTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -41,7 +40,6 @@
             android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/textViewWalkingTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
@@ -71,7 +69,6 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/textViewWalkingDistance"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -169,7 +166,6 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/textViewWalkingTime"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -209,7 +205,6 @@
             android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/textViewRunningTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
@@ -238,7 +233,6 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/textViewRunningDistance"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -334,7 +328,6 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/textViewRunningSpeedTime"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -375,7 +368,6 @@
             android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/textViewCyclingTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
@@ -404,7 +396,6 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/textViewCyclingDistance"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -500,7 +491,6 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/textViewCyclingTime"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"

@@ -12,6 +12,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -22,13 +23,13 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
     private String prevSelectedTimeframe = "1 Week";
     private DatabaseManager dbManager;
-    public ProgressFragment(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+    public ProgressFragment() {
     }
 
     @Override
@@ -36,6 +37,8 @@ public class ProgressFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.progress_fragment, container, false);
+
+        this.dbManager = DatabaseManager.getInstance(requireContext());
 
         // Get the Spinner from the layout
         Spinner spinnerDuration = view.findViewById(R.id.dropDownTimeframe);
@@ -338,26 +341,26 @@ public class ProgressFragment extends Fragment {
     }
 
     private void updateSingleTextViewColour(int percentChange, int textViewid) {
-        TextView textView = getView().findViewById(textViewid);
+        TextView textView = requireView().findViewById(textViewid);
         int color;
 
         // Set the background color based on the percentage change
         if (percentChange > 0) {
             // Positive percentage change, set background to green
-            color = getResources().getColor(R.color.positiveChangeText);
+            color = ContextCompat.getColor(requireContext(), R.color.positiveChangeText);
         } else if (percentChange < 0) {
             // Negative percentage change, set background to red
-            color = getResources().getColor(R.color.negativeChangeText);
+            color = ContextCompat.getColor(requireContext(), R.color.negativeChangeText);
         } else {
             // No change, set a default background color
-            color = getResources().getColor(R.color.white);
+            color = ContextCompat.getColor(requireContext(), R.color.white);
         }
 
         textView.setTextColor(color);
     }
 
     private void updateSingleCardViewBackground(int percentChange, int cardViewId) {
-        View cardView = getView().findViewById(cardViewId);
+        View cardView = requireView().findViewById(cardViewId);
 
         // Create a GradientDrawable
         GradientDrawable gradientDrawable = new GradientDrawable();
@@ -371,17 +374,17 @@ public class ProgressFragment extends Fragment {
         // Set the gradient colors based on the percentage change
         if (percentChange > 0) {
             // Positive percentage change, set gradient from green to a lighter green
-            int startColor = getResources().getColor(R.color.positiveChangeStart);
-            int endColor = getResources().getColor(R.color.positiveChangeEnd);
+            int startColor = ContextCompat.getColor(requireContext(), R.color.positiveChangeStart);
+            int endColor = ContextCompat.getColor(requireContext(), R.color.positiveChangeEnd);
             gradientDrawable.setColors(new int[]{startColor, endColor});
         } else if (percentChange < 0) {
             // Negative percentage change, set gradient from red to a lighter red
-            int startColor = getResources().getColor(R.color.negativeChangeStart);
-            int endColor = getResources().getColor(R.color.negativeChangeEnd);
+            int startColor = ContextCompat.getColor(requireContext(), R.color.negativeChangeStart);
+            int endColor = ContextCompat.getColor(requireContext(), R.color.negativeChangeEnd);
             gradientDrawable.setColors(new int[]{startColor, endColor});
         } else {
             // No change, set a default background color (black)
-            gradientDrawable.setColor(getResources().getColor(R.color.black));
+            gradientDrawable.setColor(ContextCompat.getColor(requireContext(), R.color.black));
         }
 
         // Set the GradientDrawable as the background of the CardView
@@ -409,11 +412,8 @@ public class ProgressFragment extends Fragment {
         Log.d("TRIP LOAD", "BEGIN LOAD");
 
         try {
-            // Initialize your DatabaseManager
-            DatabaseManager databaseManager = new DatabaseManager(requireContext());
-
             // Load trip history from the database
-            tripHistory = databaseManager.loadTripHistory();
+            tripHistory = dbManager.loadTripHistory();
             Log.d("TRIP LOAD", "Number of trips loaded from the database: " + tripHistory.size());
 
         } catch (ParseException e) {
@@ -425,7 +425,7 @@ public class ProgressFragment extends Fragment {
 
     private void updateWalkingStats(double totalDistance, double totalSpeed, long totalTime,
                                     int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
-        TextView textViewWalkingDistanceValue = getView().findViewById(R.id.textViewWalkingDistanceValue);
+        TextView textViewWalkingDistanceValue = requireView().findViewById(R.id.textViewWalkingDistanceValue);
         textViewWalkingDistanceValue.setText(formatDistance(totalDistance));
 
         TextView textViewWalkingDistanceChange = getView().findViewById(R.id.textViewWalkingDistanceChange);
@@ -445,7 +445,7 @@ public class ProgressFragment extends Fragment {
     }
     private void updateRunningStats(double totalDistance, double totalSpeed, long totalTime,
                                     int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
-        TextView textViewRunningDistanceValue = getView().findViewById(R.id.textViewRunningDistanceValue);
+        TextView textViewRunningDistanceValue = requireView().findViewById(R.id.textViewRunningDistanceValue);
         textViewRunningDistanceValue.setText(formatDistance(totalDistance));
 
         TextView textViewRunningDistanceChange = getView().findViewById(R.id.textViewRunningDistanceChange);
@@ -466,7 +466,7 @@ public class ProgressFragment extends Fragment {
 
     private void updateCyclingStats(double totalDistance, double totalSpeed, long totalTime,
                                     int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
-        TextView textViewCyclingDistanceValue = getView().findViewById(R.id.textViewCyclingDistanceValue);
+        TextView textViewCyclingDistanceValue = requireView().findViewById(R.id.textViewCyclingDistanceValue);
         textViewCyclingDistanceValue.setText(formatDistance(totalDistance));
 
         TextView textViewCyclingDistanceChange = getView().findViewById(R.id.textViewCyclingDistanceChange);

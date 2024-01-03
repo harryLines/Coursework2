@@ -1,10 +1,16 @@
 package com.example.trailblazer;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.viewpager.widget.ViewPager;
+import androidx.core.app.ActivityCompat;
 import androidx.viewpager2.widget.ViewPager2;
+import android.Manifest;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -14,8 +20,14 @@ import android.widget.ImageView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.Objects;
+
 public class MainActivity extends AppCompatActivity {
-    private DatabaseManager dbManager;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private static final String PREF_SELECTED_TAB_INDEX = "selected_tab_index";
+    private int currentTabIndex = 0;
+    ViewPager2 viewPager;
+    TabLayout tabLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,16 +35,32 @@ public class MainActivity extends AppCompatActivity {
         ThemeManager.applyTheme(this, currentTheme);
         setContentView(R.layout.activity_main);
 
-        ViewPager2 viewPager = findViewById(R.id.viewPager);
-        TabLayout tabLayout = findViewById(R.id.tabLayout);
-        dbManager = new DatabaseManager(this);
+        checkLocationPermission();
+
+        viewPager = findViewById(R.id.viewPager);
+        tabLayout = findViewById(R.id.tabLayout);
+
+        currentTabIndex = getPreferences(MODE_PRIVATE).getInt(PREF_SELECTED_TAB_INDEX, 0);
+        viewPager.setCurrentItem(currentTabIndex, false);
+
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                currentTabIndex = position;
+
+                // Save the selected tab index
+                getPreferences(MODE_PRIVATE).edit().putInt(PREF_SELECTED_TAB_INDEX, currentTabIndex).apply();
+            }
+        });
+
         // Check if there is an intent and if it contains the extra data
         if (getIntent() != null && getIntent().hasExtra("fragmentToShow") || getIntent().hasExtra("stopLogging")) {
             String fragmentTag = getIntent().getStringExtra("fragmentToShow");
             Log.d("BUTTON", "NOT");
 
             // Navigate to the desired fragment based on the tag or identifier
-            if (fragmentTag.equals("Logging")) {
+            if (Objects.requireNonNull(fragmentTag).equals("Logging")) {
                 Log.d("BUTTON", "PRESSED NOT");
                 tabLayout.selectTab(tabLayout.getTabAt(2));
             } else {
@@ -48,12 +76,13 @@ public class MainActivity extends AppCompatActivity {
         } else {
 
             ViewPagerAdapter adapter = new ViewPagerAdapter(this);
-            adapter.addFragment(new HomeFragment(dbManager), null);
-            adapter.addFragment(new LocationFragment(dbManager), null);
-            adapter.addFragment(new LoggingFragment(dbManager), null);
-            adapter.addFragment(new TripsFragment(dbManager), null);
-            adapter.addFragment(new ProgressFragment(dbManager), null);
-            adapter.addFragment(new GoalsFragment(dbManager), null);
+
+            adapter.addFragment(new HomeFragment(), "Home");
+            adapter.addFragment(new LocationFragment(), "Saved Locations");
+            adapter.addFragment(new LoggingFragment(), "Logging");
+            adapter.addFragment(new TripsFragment(), "Trip History");
+            adapter.addFragment(new ProgressFragment(), "Progress");
+            adapter.addFragment(new GoalsFragment(), "Goals");
 
             viewPager.setAdapter(adapter);
 
@@ -63,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 TabLayout.Tab tab = tabLayout.getTabAt(i);
                 if (tab != null) {
                     tab.setCustomView(R.layout.tab_icon);
-                    ImageView tabIcon = tab.getCustomView().findViewById(R.id.tabIcon);
+                    ImageView tabIcon = Objects.requireNonNull(tab.getCustomView()).findViewById(R.id.tabIcon);
 
                     // Set the appropriate icon for each tab
                     switch (i) {
@@ -87,6 +116,34 @@ public class MainActivity extends AppCompatActivity {
                             break;
                     }
                 }
+            }
+        }
+    }
+
+    private void checkLocationPermission() {
+        // Check for location permission
+        if (ActivityCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Location permission is not granted, request it
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE
+            );
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Location permission granted
+                // You can start location-related tasks here if needed
+            } else {
+                Log.e("LOCATION", "Location permission denied");
+                // Handle the case where the user denied the permission
             }
         }
     }
@@ -129,19 +186,28 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             // Open SettingsActivity
             Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-            dbManager.close();
-            finish();
+            settingsLauncher.launch(intent);
             return true;
         }
 
         if(id== R.id.action_profile) {
             Intent intent = new Intent(this, ProfileActivity.class);
-            startActivity(intent);
-            finish();
+            settingsLauncher.launch(intent);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
+
+    private final ActivityResultLauncher<Intent> settingsLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                int currentTheme = ThemeManager.getSelectedTheme(getApplicationContext());
+                ThemeManager.applyTheme(this, currentTheme);
+                if (result.getResultCode() == RESULT_OK) {
+                    // Recreate the activity to apply the theme changes immediately
+                    recreate();
+                }
+            }
+    );
 }

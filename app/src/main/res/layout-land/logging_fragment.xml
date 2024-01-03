@@ -1,0 +1,222 @@
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+        <variable
+            name="viewModel"
+            type="com.example.trailblazer.LoggingFragmentViewModel" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <LinearLayout
+                android:id="@+id/linearLayout"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_margin="3dp"
+                android:layout_weight="2"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textViewTravelType"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="16dp"
+                    android:text="Selected Travel Type:"
+                    android:textAlignment="textStart"
+                    android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}" />
+
+                <RadioGroup
+                    android:id="@+id/trackingTypeGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_margin="12dp"
+                    android:layout_weight="3.5">
+
+                    <RadioButton
+                        android:id="@+id/radioBtnWalking"
+                        style="@style/Regular"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/radio_button_movement_type_design"
+                        android:button="@null"
+                        android:checked="@{viewModel.walkingChecked}"
+                        android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setWalkingChecked(isChecked)}"
+                        android:text="Walking"
+                        android:textAlignment="center"
+                        android:textSize="34sp"
+                        android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}" />
+
+                    <RadioButton
+                        android:id="@+id/radioBtnRunning"
+                        style="@style/Regular"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/radio_button_movement_type_design"
+                        android:button="@null"
+                        android:checked="@{viewModel.runningChecked}"
+                        android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setRunningChecked(isChecked)}"
+                        android:text="Running"
+                        android:textAlignment="center"
+                        android:textSize="34sp"
+                        android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}" />
+
+                    <RadioButton
+                        android:id="@+id/radioBtnCycling"
+                        style="@style/Regular"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/radio_button_movement_type_design"
+                        android:button="@null"
+                        android:checked="@{viewModel.cyclingChecked}"
+                        android:onCheckedChanged="@{(buttonView, isChecked) -> viewModel.setCyclingChecked(isChecked)}"
+                        android:text="Cycling"
+                        android:textAlignment="center"
+                        android:textSize="34sp"
+                        android:visibility="@{viewModel.isTracking ? android.view.View.GONE : android.view.View.VISIBLE}" />
+
+                    <TextView
+                        android:id="@+id/textViewElapsedTime"
+                        style="@style/Regular"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center_horizontal|center_vertical"
+                        android:text="@{viewModel.seconds}"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                        android:textSize="48sp"
+                        android:textStyle="bold"
+                        android:visibility="@{viewModel.isTracking ? android.view.View.VISIBLE : android.view.View.GONE}" />
+
+
+                </RadioGroup>
+
+                <TextView
+                    android:id="@+id/txtViewNearbySavedLocation"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text='@{"You are near: " + viewModel.savedLocationName}'
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+                    android:textSize="20sp"
+                    android:visibility="@{viewModel.isTracking ? android.view.View.VISIBLE : android.view.View.GONE}"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerViewReminders"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="2"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    android:visibility="@{viewModel.isTracking ? android.view.View.VISIBLE : android.view.View.GONE}"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="2"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/btnStartTracking"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_margin="16dp"
+                    android:layout_weight="2"
+                    android:background="@drawable/button_design"
+                    android:fontFamily="sans-serif-black"
+                    android:text="Start Tracking"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/txtViewDistance"
+                    style="@style/Regular"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text='@{String.format("%.0f m (%.2f km)", viewModel.distance, viewModel.distance/1000)}'
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="34sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_margin="16dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/textViewCalories"
+                        style="@style/Regular"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center_vertical|end"
+                        android:layout_weight="1"
+                        android:gravity="right|center_vertical|end"
+                        android:text='@{String.valueOf(viewModel.calories) + " kcal"}'
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                        android:textSize="34sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/imageViewCalories"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal|left|center_vertical"
+                        android:layout_weight="1"
+                        android:adjustViewBounds="false"
+                        android:cropToPadding="false"
+                        android:foregroundGravity="left|center_vertical"
+                        android:scaleType="fitStart"
+                        android:src="@drawable/calories_icon" />
+
+                    <TextView
+                        android:id="@+id/textViewSteps"
+                        style="@style/Regular"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center_vertical|end"
+                        android:layout_weight="1"
+                        android:gravity="right|center_vertical|end"
+                        android:text="@{String.valueOf(viewModel.steps)}"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                        android:textSize="34sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/imageViewSteps"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="left"
+                        android:layout_weight="1"
+                        android:adjustViewBounds="false"
+                        android:cropToPadding="false"
+                        android:foregroundGravity="left"
+                        android:scaleType="fitStart"
+                        android:src="@drawable/steps_icon" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

@@ -11,11 +11,11 @@ public class LoggingFragmentViewModel extends ViewModel {
     private final MutableLiveData<Long> seconds = new MutableLiveData<>(0L);
     private final MutableLiveData<String> savedLocationName = new MutableLiveData<>("");
     private final MutableLiveData<Integer> steps = new MutableLiveData<>(0);
-    private MutableLiveData<Boolean> walkingChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Boolean> runningChecked = new MutableLiveData<>(false);
-    private MutableLiveData<Boolean> cyclingChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> walkingChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> runningChecked = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> cyclingChecked = new MutableLiveData<>(false);
 
-    private MutableLiveData<Boolean> isTracking = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isTracking = new MutableLiveData<>(false);
 
     public MutableLiveData<Boolean> getIsTracking() {
         return isTracking;

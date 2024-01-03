@@ -79,6 +79,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         super.onCreate();
         Log.d("Location SRVC", "Service Started");
 
+        databaseManager = DatabaseManager.getInstance(getApplicationContext());
+
         // Initialize sensorManager
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager == null) {
@@ -119,7 +121,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         lastElevationDataTime = 0;
         initTimerRunnable();
         startLocationUpdates();
-        databaseManager = new DatabaseManager(this);
     }
 
 
@@ -267,7 +268,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                         .build();
 
         // Enqueue the work request to the WorkManager
-        WorkManager.getInstance().enqueue(saveTripWorker);
+        WorkManager.getInstance(getApplicationContext()).enqueue(saveTripWorker);
     }
 
     private void initLocationUpdates() {
@@ -293,7 +294,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // Check for location permission
         if (ActivityCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            LocationRequest locationRequest = new LocationRequest();
+            LocationRequest locationRequest = LocationRequest.create();
             locationRequest.setInterval(1000); // Update interval in milliseconds
             locationRequest.setFastestInterval(1000); // Fastest update interval
 
@@ -352,7 +353,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             }
         });
     }
-    // Use a formula to calculate distance instead of outsourcing to an API to ensure speed
+    // Use a formula to calculate distance instead of outsourcing to an API to ensure speed and reliability
     private double calculateHaversineDistance(double startLat, double startLng, double endLat, double endLng) {
         double R = 6371;
 
@@ -443,9 +444,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     }
 
     private List<SavedLocation> loadSavedLocations() {
-        // Initialize your DatabaseManager
-        DatabaseManager databaseManager = new DatabaseManager(getApplicationContext());
-
         // Load saved locations from the database
         List<SavedLocation> savedLocations = databaseManager.loadSavedLocations();
 
@@ -509,6 +507,13 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        // Create an intent for the button
+        Intent buttonIntent = new Intent(this, MainActivity.class);  // Replace YourButtonActionActivity with the actual activity you want to open on button click
+        buttonIntent.putExtra("fragmentToShow", "N/A");
+        buttonIntent.putExtra("stopLogging", true);
+        buttonIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent buttonPendingIntent = PendingIntent.getActivity(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         // Build the updated notification
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Movement Tracker")
@@ -516,7 +521,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 .setSmallIcon(R.drawable.log_tab_icon)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true) // Auto-cancel the notification when clicked
-                .setContentIntent(notificationPendingIntent);
+                .setContentIntent(notificationPendingIntent)
+                .addAction(android.R.drawable.ic_media_pause, "Stop Tracking", buttonPendingIntent);
 
         // If a saved location is found, add information to the notification
         if (!savedLocationName.equals("NULL")) {
@@ -545,6 +551,13 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        // Create an intent for the button
+        Intent buttonIntent = new Intent(this, MainActivity.class);  // Replace YourButtonActionActivity with the actual activity you want to open on button click
+        buttonIntent.putExtra("fragmentToShow", "N/A");
+        buttonIntent.putExtra("stopLogging", true);
+        buttonIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent buttonPendingIntent = PendingIntent.getActivity(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         // Build the updated notification
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Movement Tracker")
@@ -552,7 +565,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 .setSmallIcon(R.drawable.log_tab_icon)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true) // Auto-cancel the notification when clicked
-                .setContentIntent(notificationPendingIntent);
+                .setContentIntent(notificationPendingIntent)
+                .addAction(android.R.drawable.ic_media_pause, "Stop Tracking", buttonPendingIntent);
 
         notificationBuilder.setContentText("Your trip is being tracked");
 

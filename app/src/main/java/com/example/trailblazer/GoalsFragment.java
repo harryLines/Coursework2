@@ -28,8 +28,7 @@ public class GoalsFragment extends Fragment {
     Button btnAddGoal;
     DatabaseManager dbManager;
 
-    public GoalsFragment(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+    public GoalsFragment() {
     }
 
     @Override
@@ -39,6 +38,8 @@ public class GoalsFragment extends Fragment {
         binding = DataBindingUtil.inflate(inflater, R.layout.goals_fragment, container, false);
         viewModel = new ViewModelProvider(this).get(GoalsFragmentViewModel.class);
         btnAddGoal = binding.btnCreateGoal;
+
+        this.dbManager = DatabaseManager.getInstance(requireContext());
 
         // Bind the ViewModel to the layout
         binding.setViewModel(viewModel);
@@ -136,8 +137,11 @@ public class GoalsFragment extends Fragment {
             Date currentDate = new Date();
             // Define the desired date format
             Goal newGoal = new Goal(0,metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
-
             dbManager.addNewGoal(newGoal);
+
+            List<Goal> updatedGoalsList = dbManager.loadGoals();
+
+            viewModel.setGoalsList(updatedGoalsList);
         });
 
         // Set up the negative button (Cancel)

@@ -1,6 +1,5 @@
 package com.example.trailblazer;
 
-import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -60,7 +59,7 @@ public class ElevationFinder {
         }
 
         @Override
-        public Double call() throws Exception {
+        public Double call() {
             try {
                 // Construct the API request URL
                 String requestUrl = BASE_URL +

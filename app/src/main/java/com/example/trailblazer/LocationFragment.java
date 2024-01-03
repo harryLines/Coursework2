@@ -39,15 +39,11 @@ import java.util.List;
 public class LocationFragment extends Fragment {
 
     private AutoCompleteTextView autoCompleteTextView;
-    private RecyclerView recyclerViewSavedLocations;
     private SavedLocationsAdapter savedLocationsAdapter;
     private List<SavedLocation> savedLocations;
     private PlacesClient placesClient;
-    private Button btnSaveLocation;
     private DatabaseManager dbManager;
-
-    public LocationFragment(DatabaseManager dbManager) {
-        this.dbManager = dbManager;
+    public LocationFragment() {
     }
 
     @Override
@@ -55,8 +51,10 @@ public class LocationFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.location_fragment, container, false);
 
+        this.dbManager = DatabaseManager.getInstance(requireContext());
+
         autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
-        recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
+        RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
 
         // Initialize RecyclerView and adapter
         savedLocations = loadSavedLocations(); // Implement this method to load data from the text file
@@ -82,7 +80,7 @@ public class LocationFragment extends Fragment {
                 getPlaceSuggestions(s.toString());
             }
         });
-        btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
+        Button btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
         btnSaveLocation.setOnClickListener(v -> {
             showSaveLocationDialog();
         });
@@ -147,6 +145,7 @@ public class LocationFragment extends Fragment {
                     LatLng selectedLatLng = place.getLatLng();
 
                     // Create a new SavedLocation instance
+                    assert selectedLatLng != null;
                     long locationId = saveLocationToDatabase(locationName, selectedLatLng);
 
                     // Create a new SavedLocation instance with the locationId
@@ -195,8 +194,7 @@ public class LocationFragment extends Fragment {
             // Check if the work request was successful
             if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
                 // Extract the locationId from the result data
-                long locationId = workInfo.getOutputData().getLong("locationId", -1);
-                return locationId;
+                return workInfo.getOutputData().getLong("locationId", -1);
             } else {
                 // Handle the case where the work request failed
                 return -1L;
@@ -252,7 +250,7 @@ public class LocationFragment extends Fragment {
     }
 
     private List<SavedLocation> loadSavedLocations() {
-        List<SavedLocation> savedLocations = new ArrayList<>();
+        List<SavedLocation> savedLocations;
         // Load saved locations from the database
         savedLocations = dbManager.loadSavedLocations();
 

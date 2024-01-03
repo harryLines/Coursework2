@@ -19,8 +19,8 @@ public class WeeklyGraphViewCalories extends View {
     private List<Integer> dataPoints;
     private List<Date> dateList;
     private int themeColor;
-    Paint textPaint = new Paint();
-    Paint barPaint = new Paint();
+    final Paint textPaint = new Paint();
+    final Paint barPaint = new Paint();
 
     public WeeklyGraphViewCalories(Context context) {
         super(context);
@@ -79,21 +79,20 @@ public class WeeklyGraphViewCalories extends View {
             float left = i * barWidth;
             float top = height - normalizedValue;
             float right = left + barWidth;
-            float bottom = height;
 
             // Draw bar
-            canvas.drawRect(left, top, right, bottom, barPaint);
+            canvas.drawRect(left, top, right, (float) height, barPaint);
 
             // Draw label in the middle of the bar
             String caloriesLabel = String.format(Locale.getDefault(), "%d kcal", (int) value);
 
             // Rotate the canvas for vertical text
             canvas.save();
-            canvas.rotate(-90, left + (barWidth / 2), (top + bottom) / 2);
+            canvas.rotate(-90, left + (barWidth / 2), (top + (float) height) / 2);
 
             // Ensure that the label is within the canvas bounds
             float labelX = left + (barWidth / 2) - (textPaint.measureText(caloriesLabel) / 2);
-            float labelY = (top + bottom) / 2;
+            float labelY = (top + (float) height) / 2;
             labelY = Math.max(labelY, 0);
 
             canvas.drawText(caloriesLabel, labelX, labelY, textPaint);
@@ -104,7 +103,7 @@ public class WeeklyGraphViewCalories extends View {
             // Draw date label at the bottom of the bar
             String dateLabel = formatDate(dateList.get(i));
             float dateLabelX = left + (barWidth / 2) - (textPaint.measureText(dateLabel) / 2);
-            float dateLabelY = bottom + 50 + textPaint.getTextSize(); // Adjust this value for label position below the bar
+            float dateLabelY = (float) height + 50 + textPaint.getTextSize(); // Adjust this value for label position below the bar
 
             // Ensure that the date label is within the canvas bounds
             dateLabelY = Math.min(dateLabelY, getHeight() - textPaint.getTextSize());

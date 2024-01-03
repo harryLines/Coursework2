@@ -15,12 +15,12 @@ import java.util.List;
 
 
 public class DatabaseTripInsertWorker extends Worker {
-    private DatabaseManager dbManager;
+    private final DatabaseManager dbManager;
     public DatabaseTripInsertWorker(
             @NonNull Context context,
             @NonNull WorkerParameters params) {
         super(context, params);
-        this.dbManager = new DatabaseManager(context);
+        this.dbManager = DatabaseManager.getInstance(context);
     }
 
     @NonNull

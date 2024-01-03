@@ -19,22 +19,30 @@ public class WeeklyGraphViewDistance extends View {
     private List<Float> dataPoints;
     private List<Date> dateList;
     private int themeColor;
+    private Paint barPaint;
+    private Paint textPaint;
 
     public WeeklyGraphViewDistance(Context context) {
         super(context);
         themeColor = ThemeManager.getAccentColor(getContext());
+        barPaint = new Paint();
+        textPaint = new Paint();
         init();
     }
 
     public WeeklyGraphViewDistance(Context context, AttributeSet attrs) {
         super(context, attrs);
         themeColor = ThemeManager.getAccentColor(getContext());
+        barPaint = new Paint();
+        textPaint = new Paint();
         init();
     }
 
     public WeeklyGraphViewDistance(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         themeColor = ThemeManager.getAccentColor(getContext());
+        barPaint = new Paint();
+        textPaint = new Paint();
         init();
     }
 
@@ -55,12 +63,10 @@ public class WeeklyGraphViewDistance extends View {
         int numPoints = dataPoints.size();
 
         // Set up the Paint for drawing bars
-        Paint barPaint = new Paint();
         barPaint.setColor(themeColor);
         barPaint.setStrokeWidth(5);
 
         // Set up the Paint for drawing text labels
-        Paint textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
         textPaint.setTypeface(Typeface.defaultFromStyle(Typeface.NORMAL));
         textPaint.setTextSize(48);
@@ -79,10 +85,9 @@ public class WeeklyGraphViewDistance extends View {
             float left = i * barWidth;
             float top = height - normalizedValue;
             float right = left + barWidth;
-            float bottom = height;
 
             // Draw bar
-            canvas.drawRect(left, top, right, bottom, barPaint);
+            canvas.drawRect(left, top, right, (float) height, barPaint);
 
             // Draw label in the middle of the bar
             float valueInKilometers = valueInMeters / 1000.0f;
@@ -90,11 +95,11 @@ public class WeeklyGraphViewDistance extends View {
 
             // Rotate the canvas for vertical text
             canvas.save();
-            canvas.rotate(-90, left + (barWidth / 2), (top + bottom) / 2);
+            canvas.rotate(-90, left + (barWidth / 2), (top + (float) height) / 2);
 
             // Ensure that the label is within the canvas bounds
             float labelX = left + (barWidth / 2) - (textPaint.measureText(distanceLabel) / 2);
-            float labelY = (top + bottom) / 2;
+            float labelY = (top + (float) height) / 2;
             labelY = Math.max(labelY, 0);
 
             canvas.drawText(distanceLabel, labelX, labelY, textPaint);
@@ -105,7 +110,7 @@ public class WeeklyGraphViewDistance extends View {
             // Draw date label at the bottom of the bar
             String dateLabel = formatDate(dateList.get(i));
             float dateLabelX = left + (barWidth / 2) - (textPaint.measureText(dateLabel) / 2);
-            float dateLabelY = bottom + 50 + textPaint.getTextSize(); // Adjust this value for label position below the bar
+            float dateLabelY = (float) height + 50 + textPaint.getTextSize(); // Adjust this value for label position below the bar
 
             // Ensure that the date label is within the canvas bounds
             dateLabelY = Math.min(dateLabelY, getHeight() - textPaint.getTextSize());

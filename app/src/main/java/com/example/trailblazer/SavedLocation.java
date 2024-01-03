@@ -7,8 +7,8 @@ import java.util.List;
 
 public class SavedLocation {
     long locationID;
-    private String name;
-    private LatLng latLng;
+    private final String name;
+    private final LatLng latLng;
     private List<String> reminders;
     private boolean entered;
     public long getLocationID() {
