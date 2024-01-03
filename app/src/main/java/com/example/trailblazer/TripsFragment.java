@@ -39,9 +39,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class TripsFragment extends Fragment{
-    private ListView listView;
     private MapView mapView;
-    private GoogleMap googleMap;
     private ArrayAdapter<Trip> tripAdapter;
     View view;
     private DatabaseManager dbManager;
@@ -91,8 +89,6 @@ public class TripsFragment extends Fragment{
         Log.d("TRIP LOAD", "BEGIN LOAD");
 
         try {
-            // Initialize your DatabaseManager
-
             // Load trip history from the database
             tripHistory = dbManager.loadTripHistory();
 
@@ -101,8 +97,21 @@ public class TripsFragment extends Fragment{
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
         return tripHistory;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Update the statistics based on the previously selected timeframe
+        loadTripHistory();
+
+        List<Trip> reversedTripList = new ArrayList<>(loadTripHistory());
+        Collections.reverse(reversedTripList);
+
+        tripAdapter.clear();
+        tripAdapter.addAll(reversedTripList);
+        tripAdapter.notifyDataSetChanged();
     }
 
     private void toggleListViewAndMap(Trip trip) {
@@ -160,10 +169,8 @@ public class TripsFragment extends Fragment{
             }
 
             LineDataSet dataSet = new LineDataSet(entries, "Elevation (m)");
-
             dataSet.setColor(ThemeManager.getAccentColor(getContext()));
             dataSet.setValueTextColor(Color.WHITE);
-
             LineData lineData = new LineData(dataSet);
 
             XAxis xAxis = lineChart.getXAxis();
@@ -176,7 +183,6 @@ public class TripsFragment extends Fragment{
             rightAxis.setDrawGridLines(false);
 
             lineChart.setData(lineData);
-
             lineChart.invalidate();
         }
 

@@ -12,9 +12,9 @@ public class DatabaseSavedLocationInsertWorker extends Worker {
 
     public DatabaseSavedLocationInsertWorker(
             @NonNull android.content.Context context,
-            @NonNull WorkerParameters params, DatabaseManager dbManager) {
+            @NonNull WorkerParameters params) {
         super(context, params);
-        this.dbManager = dbManager;
+        dbManager = new DatabaseManager(context);
     }
 
     @NonNull

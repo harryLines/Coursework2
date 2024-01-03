@@ -77,13 +77,21 @@ public class ProgressFragment extends Fragment {
 
         // Load trip history data
         tripHistory = loadTripHistory();
-
         return view;
     }
 
     private void showToast(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Update the statistics based on the previously selected timeframe
+        updateStatistics(prevSelectedTimeframe);
+        tripHistory = loadTripHistory();
+    }
+
 
     private void updateStatistics(String selectedTimeframe) {
         // Get the start date based on the selected timeframe

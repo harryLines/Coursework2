@@ -34,7 +34,8 @@
         <service
             android:name=".MovementTrackerService"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="true"
+            android:foregroundServiceType="location|dataSync" />
 
         <activity
             android:name=".MainActivity"

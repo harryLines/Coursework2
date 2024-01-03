@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.Locale;
 
 public class Goal {
-
     public static final int TIMEFRAME_DAY = 0;
     public static final int TIMEFRAME_WEEK = 1;
     public static final int TIMEFRAME_MONTH = 2;
@@ -18,26 +17,26 @@ public class Goal {
     int timeframeType;
     double progress;
     double target;
+    long goalID;
+    Date dateCreated;
+    boolean isComplete;
 
     public long getGoalID() {
         return goalID;
     }
-
     public void setGoalID(long goalID) {
         this.goalID = goalID;
     }
 
-    long goalID;
-
     public Date getDateCreated() {
         return dateCreated;
     }
-
     public void setDateCreated(Date dateCreated) {
         this.dateCreated = dateCreated;
     }
-
-    Date dateCreated;
+    public void setComplete() {
+        isComplete = true;
+    }
 
     public String getFormattedDueDate() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -76,7 +75,6 @@ public class Goal {
             default:
                 // Handle the default case if needed
         }
-
         return calendar.getTime();
     }
 
@@ -91,6 +89,7 @@ public class Goal {
         this.target = target;
         this.goalID = goalID;
         this.dateCreated = dateCreated;
+        this.isComplete = false;
     }
 
     public String getTargetWithUnitString() {

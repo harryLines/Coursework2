@@ -18,9 +18,9 @@ public class DatabaseTripInsertWorker extends Worker {
     private DatabaseManager dbManager;
     public DatabaseTripInsertWorker(
             @NonNull Context context,
-            @NonNull WorkerParameters params, DatabaseManager dbManager) {
+            @NonNull WorkerParameters params) {
         super(context, params);
-        this.dbManager = dbManager;
+        this.dbManager = new DatabaseManager(context);
     }
 
     @NonNull
@@ -42,7 +42,6 @@ public class DatabaseTripInsertWorker extends Worker {
 
         // Initialize DatabaseManager and insert the trip into the database
         dbManager.insertTripHistory(trip);
-
         return Result.success();
     }
 }

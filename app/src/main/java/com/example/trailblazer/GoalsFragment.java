@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.trailblazer.databinding.GoalsFragmentBinding;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -46,13 +47,26 @@ public class GoalsFragment extends Fragment {
 
         // Observe changes in the LiveData and update the adapter
         viewModel.getGoalsList().observe(getViewLifecycleOwner(), goals -> {
-            GoalsAdapter adapter = new GoalsAdapter(goals);
+            // Filter out completed goals
+            List<Goal> incompleteGoals = filterCompletedGoals(goals);
+
+            GoalsAdapter adapter = new GoalsAdapter(incompleteGoals);
             binding.recyclerView.setAdapter(adapter);
         });
 
         btnAddGoal.setOnClickListener(v -> showAddGoalDialog());
 
         return binding.getRoot();
+    }
+
+    private List<Goal> filterCompletedGoals(List<Goal> goals) {
+        List<Goal> incompleteGoals = new ArrayList<>();
+        for (Goal goal : goals) {
+            if (!goal.isComplete) {
+                incompleteGoals.add(goal);
+            }
+        }
+        return incompleteGoals;
     }
 
     private List<Goal> getGoalsFromDatabase() {

@@ -24,7 +24,7 @@ import java.util.Locale;
 public class DatabaseManager extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "trailBlazerDatabase.db";
-    private static final int DATABASE_VERSION = 10;
+    private static final int DATABASE_VERSION = 11;
     // Saved locations table
     public static final String TABLE_SAVED_LOCATIONS = "saved_locations";
     public static final String COLUMN_LOCATION_ID = "_id";
@@ -58,6 +58,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
     public static final String COLUMN_PROGRESS = "progress";
     public static final String COLUMN_TARGET = "target";
     public static final String COLUMN_DATE_CREATED = "date_created";
+    public static final String COLUMN_IS_COMPLETE = "is_complete";
 
     private static final String CREATE_TRIP_HISTORY_TABLE =
             "CREATE TABLE " + TABLE_TRIP_HISTORY + " (" +
@@ -92,6 +93,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
                     COLUMN_PROGRESS + " INTEGER, " +
                     COLUMN_TARGET + " INTEGER, " +
                     COLUMN_DATE_CREATED + " TEXT, " +
+                    COLUMN_IS_COMPLETE + " INT," +
                     COLUMN_METRIC_TYPE + " INT);";
 
     public DatabaseManager(Context context) {
@@ -124,7 +126,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         SQLiteDatabase db = getReadableDatabase();
 
         Cursor cursor = db.query(TABLE_GOALS,
-                new String[]{COLUMN_GOAL_ID, COLUMN_NUMBER_OF_TIMEFRAMES, COLUMN_TIMEFRAME_TYPE, COLUMN_PROGRESS, COLUMN_TARGET, COLUMN_METRIC_TYPE, COLUMN_DATE_CREATED},
+                new String[]{COLUMN_GOAL_ID, COLUMN_NUMBER_OF_TIMEFRAMES, COLUMN_TIMEFRAME_TYPE, COLUMN_PROGRESS, COLUMN_TARGET, COLUMN_METRIC_TYPE, COLUMN_DATE_CREATED,COLUMN_IS_COMPLETE},
                 null, null, null, null, null);
 
         if (cursor != null && cursor.moveToFirst()) {
@@ -136,8 +138,10 @@ public class DatabaseManager extends SQLiteOpenHelper {
                 @SuppressLint("Range") int target = cursor.getInt(cursor.getColumnIndex(COLUMN_TARGET));
                 @SuppressLint("Range") int metricType = cursor.getInt(cursor.getColumnIndex(COLUMN_METRIC_TYPE));
                 @SuppressLint("Range") String dateCreated = cursor.getString(cursor.getColumnIndex(COLUMN_DATE_CREATED));
+                @SuppressLint("Range") int isComplete = cursor.getInt(cursor.getColumnIndex(COLUMN_IS_COMPLETE));
 
                 Goal goalItem = new Goal(goalId, metricType, numberOfTimeframes, timeframeType, progress, target, parseDateFromString(dateCreated));
+                goalItem.isComplete = isComplete == 1;
                 goalsList.add(goalItem);
 
             } while (cursor.moveToNext());
@@ -176,6 +180,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
                 values.put(COLUMN_TARGET, updatedGoal.getTarget());
                 values.put(COLUMN_METRIC_TYPE, updatedGoal.getMetricType());
                 values.put(COLUMN_DATE_CREATED, updatedGoal.getDateCreated().toString());
+                values.put(COLUMN_IS_COMPLETE, updatedGoal.isComplete);
 
                 // Update the goal in the database
                 db.update(
@@ -398,7 +403,11 @@ public class DatabaseManager extends SQLiteOpenHelper {
         values.put(COLUMN_TARGET, goal.getTarget());
         values.put(COLUMN_METRIC_TYPE, goal.getMetricType());
         values.put(COLUMN_DATE_CREATED,goal.getDateCreated().toString());
-
+        if(goal.isComplete){
+            values.put(COLUMN_IS_COMPLETE, 1);
+        } else {
+            values.put(COLUMN_IS_COMPLETE, 0);
+        }
         db.insert(TABLE_GOALS, null, values);
         db.close();
     }

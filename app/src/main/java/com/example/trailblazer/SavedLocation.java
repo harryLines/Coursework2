@@ -6,18 +6,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SavedLocation {
-    public long getLocationID() {
-        return locationID;
-    }
-
-    public void setLocationID(long locationID) {
-        this.locationID = locationID;
-    }
-
     long locationID;
     private String name;
     private LatLng latLng;
     private List<String> reminders;
+    private boolean entered;
+    public long getLocationID() {
+        return locationID;
+    }
+    public void setLocationID(long locationID) {
+        this.locationID = locationID;
+    }
+    public boolean isEntered() {
+        return entered;
+    }
+
+    public void setEntered(boolean entered) {
+        this.entered = entered;
+    }
 
     public SavedLocation(long locationID,String name, LatLng latLng,List<String> reminders) {
         this.name = name;
@@ -28,6 +34,7 @@ public class SavedLocation {
             this.reminders = reminders;
         }
         this.locationID = locationID;
+        this.entered = false;
     }
 
     public String getName() {

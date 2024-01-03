@@ -23,6 +23,7 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
@@ -48,6 +49,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private static final long MIN_ELEVATION_UPDATE_INTERVAL = 30000;
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "Movement Tracker Channel";
+    private static final String SECOND_CHANNEL_ID = "Movement Tracker Channel 2";
+
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
     private FusedLocationProviderClient fusedLocationClient;
@@ -69,6 +72,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private long lastLocationPointTime;
     private long lastElevationDataTime;
     private DatabaseManager databaseManager;
+    private boolean notificationUpdated = false;
 
     @Override
     public void onCreate() {
@@ -223,7 +227,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         return START_STICKY;
     }
 
-
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -365,6 +368,23 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         return R * c * 1000;
     }
 
+    private void showNotification(String locationName) {
+        // Create a notification channel for Android Oreo and higher
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), SECOND_CHANNEL_ID)
+                .setSmallIcon(R.drawable.running_icon)
+                .setContentTitle("Location Saved")
+                .setContentText("You are near " + locationName)
+                .setAutoCancel(true);
+
+        // Show the notification
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
+            return;
+        }
+        notificationManager.notify(1, builder.build());
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -388,10 +408,22 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
             // You can adjust the radius (in meters) as needed
             if (distanceToSavedLocation < 100) {
+                // Set the saved location as entered to avoid showing the notification again
+
+                if (!savedLocation.isEntered()) {
+                    savedLocation.setEntered(true);
+                    updateNotificationWithSavedLocation(savedLocation.getName());
+                }
+
+                // Set intent extras
                 intent.putExtra("savedLocationName", savedLocation.getName());
                 intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
                 foundCloseLocation = true;
+                notificationUpdated = false;
                 break; // Stop checking once a close location is found
+            } else if(!notificationUpdated){
+                notificationUpdated = true;
+                updateNotificationWithNoSavedLocation();
             }
         }
 
@@ -402,15 +434,11 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         }
 
         intent.putExtra("distance", distance);
-
-        // Add tracking duration to the intent
         long seconds = elapsedMillis / 1000;
         intent.putExtra("trackingDuration", seconds);
-
         intent.putExtra("stepCount", stepDetector.getStepCount());
         Log.d("CARLOEIWS", String.valueOf(caloriesBurned));
-        intent.putExtra("caloriesBurned",caloriesBurned);
-
+        intent.putExtra("caloriesBurned", caloriesBurned);
         sendBroadcast(intent);
     }
 
@@ -469,5 +497,72 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         if (notificationManager != null) {
             notificationManager.createNotificationChannel(channel);
         }
+    }
+
+    private void updateNotificationWithSavedLocation(String savedLocationName) {
+        // Create a notification channel (for Android Oreo and higher)
+        createNotificationChannel();
+
+        // Create an intent for the notification
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.putExtra("fragmentToShow", "Logging");
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // Build the updated notification
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Movement Tracker")
+                .setContentText("Your trip is being tracked.")
+                .setSmallIcon(R.drawable.log_tab_icon)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true) // Auto-cancel the notification when clicked
+                .setContentIntent(notificationPendingIntent);
+
+        // If a saved location is found, add information to the notification
+        if (!savedLocationName.equals("NULL")) {
+            notificationBuilder.setContentText("Your trip is being tracked near " + savedLocationName);
+            // You can customize the notification further based on your requirements
+            // For example, you can add reminders or other information from the saved location
+        }
+
+        Notification updatedNotification = notificationBuilder.build();
+
+        // Update the existing notification
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        notificationManager.notify(NOTIFICATION_ID, updatedNotification);
+    }
+
+    private void updateNotificationWithNoSavedLocation() {
+        // Create a notification channel (for Android Oreo and higher)
+        createNotificationChannel();
+
+        // Create an intent for the notification
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.putExtra("fragmentToShow", "Logging");
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // Build the updated notification
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Movement Tracker")
+                .setContentText("Your trip is being tracked.")
+                .setSmallIcon(R.drawable.log_tab_icon)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true) // Auto-cancel the notification when clicked
+                .setContentIntent(notificationPendingIntent);
+
+        notificationBuilder.setContentText("Your trip is being tracked");
+
+        Notification updatedNotification = notificationBuilder.build();
+
+        // Update the existing notification
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        notificationManager.notify(NOTIFICATION_ID, updatedNotification);
     }
 }

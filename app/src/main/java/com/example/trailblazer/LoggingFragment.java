@@ -3,10 +3,12 @@ package com.example.trailblazer;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,6 +23,9 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -41,7 +46,6 @@ import java.util.Locale;
 import java.util.Objects;
 
 public class LoggingFragment extends Fragment {
-    private static final int REQUEST_IMAGE_CAPTURE = 1;
     RadioButton walkingRadioButton;
     RadioButton runningRadioButton;
     RadioButton cyclingRadioButton;
@@ -57,6 +61,7 @@ public class LoggingFragment extends Fragment {
     private ReminderAdapter reminderAdapter;
     private LoggingFragmentViewModel viewModel;
     private DatabaseManager dbManager;
+
     public LoggingFragment(DatabaseManager dbManager) {
         this.dbManager = dbManager;
     }
@@ -156,6 +161,9 @@ public class LoggingFragment extends Fragment {
                     default:
                         Log.w("Goal Update", "Unsupported metric type: " + goal.getMetricType());
                 }
+                if (goal.getProgress() >= goal.getTarget()) {
+                    goal.setComplete();
+                }
             }
 
             // Save the updated goals back to the database
@@ -195,7 +203,7 @@ public class LoggingFragment extends Fragment {
         // Create an intent for your service
         Intent serviceIntent = new Intent(getActivity(), MovementTrackerService.class);
 
-        if(viewModel.getWalkingChecked().getValue()) {
+        if (viewModel.getWalkingChecked().getValue()) {
             serviceIntent.putExtra("movementType", 0);
         } else if (viewModel.getRunningChecked().getValue()) {
             serviceIntent.putExtra("movementType", 1);
@@ -226,6 +234,7 @@ public class LoggingFragment extends Fragment {
         }
         return false;
     }
+
     private void showMovementTypeAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Alert")
@@ -242,16 +251,16 @@ public class LoggingFragment extends Fragment {
                 Log.d("DISTANCE", String.valueOf(viewModel.getDistance().getValue()));
                 viewModel.setSeconds(intent.getLongExtra("trackingDuration", viewModel.getSeconds().getValue()));
                 viewModel.setSteps(intent.getIntExtra("stepCount", viewModel.getSteps().getValue()));
-                viewModel.setCalories(intent.getIntExtra("caloriesBurned",viewModel.getCalories().getValue()));
+                viewModel.setCalories(intent.getIntExtra("caloriesBurned", viewModel.getCalories().getValue()));
 
                 if (Objects.equals(intent.getStringExtra("savedLocationName"), "NULL")) {
                     textViewNearbySavedLocation.setText(R.string.you_are_not_nearby_any_saved_locations);
                     reminderAdapter.setReminders(new ArrayList<>());
                 } else {
-                    if(intent.getStringExtra("savedLocationName") != null) {
+                    if (intent.getStringExtra("savedLocationName") != null) {
                         viewModel.setSavedLocationName(intent.getStringExtra("savedLocationName"));
                     }
-                    if(intent.getStringExtra("savedLocationReminders") != null) {
+                    if (intent.getStringExtra("savedLocationReminders") != null) {
                         savedLocationReminders = intent.getStringExtra("savedLocationReminders");
                         List<String> reminderList = Arrays.asList(savedLocationReminders.split(","));
                         reminderAdapter.setReminders(reminderList);
