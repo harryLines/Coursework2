@@ -21,4 +21,14 @@
         <item>Steps</item>
     </string-array>
 
+    <string-array name="weather_array">
+        <item>Sunny</item>
+        <item>Cloudy</item>
+        <item>Rainy</item>
+        <item>Snow</item>
+        <item>Thunderstorm</item>
+        <item>Foggy</item>
+        <item>Windy</item>
+    </string-array>
+
 </resources>

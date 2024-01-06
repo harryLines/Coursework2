@@ -36,6 +36,9 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -73,6 +76,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private long lastElevationDataTime;
     private DatabaseManager databaseManager;
     private boolean notificationUpdated = false;
+    private static int currentWeather = -1;
+    private static String currentImage;
 
     @Override
     public void onCreate() {
@@ -123,6 +128,13 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         startLocationUpdates();
     }
 
+    public static void updateImage(String image) {
+        currentImage = image;
+    }
+
+    public static void updateWeather(int weather) {
+        currentWeather = weather;
+    }
 
     // MET calculation based on (https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html)
     private int calculateCaloriesBurned() {
@@ -236,11 +248,11 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         stopLocationUpdates();
         timerHandler.removeCallbacks(timerRunnable);
         sensorManager.unregisterListener(stepDetector);
+        currentImage = null;
         databaseManager.close();
     }
 
     private void saveTripToDatabase() {
-
         // Create a new Trip instance with the required data
         Trip trip = new Trip(
                 new Date(),  // You can replace this with the actual date
@@ -248,7 +260,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 totalDistance,
                 movementType,
                 elapsedMillis / 1000,
-                routePoints,elevationData,caloriesBurned);
+                routePoints,elevationData,caloriesBurned,currentWeather,currentImage);
+
+        Log.d("WEATHER", String.valueOf(currentWeather));
 
         // Create a Data object with the necessary information
         Data inputData = new Data.Builder()
@@ -259,6 +273,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 .putString("routePoints", new Gson().toJson(trip.getRoutePoints()))
                 .putString("elevationData", new Gson().toJson(trip.getElevationData()))
                 .putInt("caloriesBurned", trip.getCaloriesBurned())
+                .putInt("weather",trip.getWeather())
+                .putString("image",currentImage)
                 .build();
 
         // Call the insertTripHistoryInBackground method from DatabaseManager
@@ -367,23 +383,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return R * c * 1000;
-    }
-
-    private void showNotification(String locationName) {
-        // Create a notification channel for Android Oreo and higher
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), SECOND_CHANNEL_ID)
-                .setSmallIcon(R.drawable.running_icon)
-                .setContentTitle("Location Saved")
-                .setContentText("You are near " + locationName)
-                .setAutoCancel(true);
-
-        // Show the notification
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-
-            return;
-        }
-        notificationManager.notify(1, builder.build());
     }
 
     @Override
@@ -526,7 +525,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
         // If a saved location is found, add information to the notification
         if (!savedLocationName.equals("NULL")) {
-            notificationBuilder.setContentText("Your trip is being tracked near " + savedLocationName);
+            notificationBuilder.setContentText("Your trip is being tracked near " + savedLocationName + "\nTap to view your reminders!");
             // You can customize the notification further based on your requirements
             // For example, you can add reminders or other information from the saved location
         }

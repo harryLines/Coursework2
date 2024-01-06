@@ -187,29 +187,20 @@ public class TripsFragment extends Fragment{
         // Find the mapContainer and listView
         FrameLayout mapContainer = requireView().findViewById(R.id.mapContainer);
         ListView listView = requireView().findViewById(R.id.listViewTrips);
-
         // Find the back button
         Button backButton = requireView().findViewById(R.id.backButton);
         LinearLayout lineChartLayout = requireView().findViewById(R.id.lineChartLayout);
         // Toggle visibility
         if (showMap) {
-            mapContainer.setVisibility(View.GONE);
-            listView.setVisibility(View.VISIBLE);
-            backButton.setVisibility(View.GONE); // Hide back button in list view
-            lineChartLayout.setVisibility(View.GONE);
-        } else {
             mapContainer.setVisibility(View.VISIBLE);
             listView.setVisibility(View.GONE);
-            backButton.setVisibility(View.VISIBLE);
+            backButton.setVisibility(View.VISIBLE); // Hide back button in list view
             lineChartLayout.setVisibility(View.VISIBLE);
             mapView = view.findViewById(R.id.mapView);
             mapView.onCreate(null);
-            mapView.onResume(); // needed to get the map to display immediately
-
-            Log.d("TRIP DATA", String.valueOf(trip.getRoutePoints()));
+            mapView.onResume();
 
             List<Double> elevationData = trip.getElevationData();
-
 
             List<SavedLocation> savedLocations = dbManager.loadSavedLocations();
 
@@ -253,10 +244,18 @@ public class TripsFragment extends Fragment{
 
             lineChart.setData(lineData);
             lineChart.invalidate();
+        } else {
+            mapContainer.setVisibility(View.GONE);
+            listView.setVisibility(View.VISIBLE);
+            backButton.setVisibility(View.GONE);
+            lineChartLayout.setVisibility(View.GONE);// needed to get the map to display immediately
         }
 
         // Set click listener for the back button
-        backButton.setOnClickListener(v -> toggleListViewAndMapPortrait(null));
+        backButton.setOnClickListener(v -> {
+            showMap = !showMap;
+            toggleListViewAndMapPortrait(null);
+        });
     }
 
     private static class XAxisValueFormatter extends ValueFormatter {

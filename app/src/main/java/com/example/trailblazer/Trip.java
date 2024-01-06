@@ -12,10 +12,37 @@ public class Trip {
     public static final int MOVEMENT_WALK = 0;
     public static final int MOVEMENT_RUN = 1;
     public static final int MOVEMENT_CYCLE = 2;
+    public static final int WEATHER_SUNNY = 0;
+    public static final int WEATHER_RAINY = 1;
+    public static final int WEATHER_SNOW = 2;
+    public static final int WEATHER_THUNDERSTORM = 3;
+    public static final int WEATHER_FOGGY = 4;
+    public static final int WEATHER_WINDY = 5;
     private double distance;
     private int caloriesBurned;
     private List<Double> elevationData;
     final List<LatLng> route;
+
+
+    public int getWeather() {
+        return weather;
+    }
+
+    public void setWeather(int weather) {
+        this.weather = weather;
+    }
+
+    private int weather;
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    private String image;
 
     public int getCaloriesBurned() {
         return caloriesBurned;
@@ -25,7 +52,7 @@ public class Trip {
         this.caloriesBurned = caloriesBurned;
     }
 
-    public Trip(Date date, long tripID, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories) {
+    public Trip(Date date, long tripID, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories, int weather, String image) {
         this.date = date;
         this.movementType = movementType;
         this.distance = distance;
@@ -33,6 +60,8 @@ public class Trip {
         this.route = routePoints;
         this.elevationData = elevationData;
         this.caloriesBurned = calories;
+        this.weather = weather;
+        this.image = image;
     }
 
     public Date getDate() {

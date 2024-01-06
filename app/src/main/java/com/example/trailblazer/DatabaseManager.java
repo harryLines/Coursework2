@@ -12,6 +12,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -22,7 +28,7 @@ import java.util.Locale;
 public class DatabaseManager extends SQLiteOpenHelper {
     private static DatabaseManager instance;
     private static final String DATABASE_NAME = "trailBlazerDatabase.db";
-    private static final int DATABASE_VERSION = 11;
+    private static final int DATABASE_VERSION = 18;
     // Saved locations table
     public static final String TABLE_SAVED_LOCATIONS = "saved_locations";
     public static final String COLUMN_LOCATION_ID = "_id";
@@ -43,9 +49,10 @@ public class DatabaseManager extends SQLiteOpenHelper {
     public static final String COLUMN_DISTANCE_TRAVELED = "distance_traveled";
     public static final String COLUMN_TIME = "time";
     public static final String COLUMN_ROUTE_POINTS = "route_points";
-    public static final String COLUMN_IMAGE_PATH = "image_path";
+    public static final String COLUMN_IMAGE = "image";
     public static final String COLUMN_ELEVATION_DATA = "elevation_data";
     public static final String COLUMN_CALORIES_BURNED = "calories_burned";
+    public static final String COLUMN_WEATHER = "weather";
 
     //Goals table
     public static final String TABLE_GOALS = "goals";
@@ -66,8 +73,9 @@ public class DatabaseManager extends SQLiteOpenHelper {
                     COLUMN_DISTANCE_TRAVELED + " REAL, " +
                     COLUMN_TIME + " INTEGER, " +
                     COLUMN_ROUTE_POINTS + " TEXT, " +
-                    COLUMN_IMAGE_PATH + " TEXT, " +
+                    COLUMN_IMAGE + " TEXT, " +
                     COLUMN_CALORIES_BURNED + " TEXT, " +
+                    COLUMN_WEATHER + " INTEGER, " +
                     COLUMN_ELEVATION_DATA + " TEXT" + ");";
 
     private static final String CREATE_SAVED_LOCATIONS_TABLE =
@@ -209,7 +217,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         SQLiteDatabase db = getReadableDatabase();
 
         Cursor cursor = db.query(TABLE_TRIP_HISTORY,
-                new String[]{COLUMN_TRIP_ID, COLUMN_MOVEMENT_TYPE, COLUMN_DATE, COLUMN_DISTANCE_TRAVELED, COLUMN_TIME, COLUMN_ROUTE_POINTS,COLUMN_ELEVATION_DATA,COLUMN_CALORIES_BURNED},
+                new String[]{COLUMN_TRIP_ID, COLUMN_MOVEMENT_TYPE, COLUMN_DATE, COLUMN_DISTANCE_TRAVELED, COLUMN_TIME, COLUMN_ROUTE_POINTS,COLUMN_ELEVATION_DATA,COLUMN_CALORIES_BURNED,COLUMN_WEATHER,COLUMN_IMAGE},
                 null, null, null, null, null);
 
         if (cursor != null && cursor.moveToFirst()) {
@@ -222,8 +230,10 @@ public class DatabaseManager extends SQLiteOpenHelper {
                 @SuppressLint("Range") long time = cursor.getLong(cursor.getColumnIndex(COLUMN_TIME));
                 @SuppressLint("Range") String elevationData = cursor.getString(cursor.getColumnIndex(COLUMN_ELEVATION_DATA));
                 @SuppressLint("Range") int calories = cursor.getInt(cursor.getColumnIndex(COLUMN_CALORIES_BURNED));
+                @SuppressLint("Range") int weather = cursor.getInt(cursor.getColumnIndex(COLUMN_WEATHER));
+                @SuppressLint("Range") String image = cursor.getString(cursor.getColumnIndex(COLUMN_IMAGE));
 
-                Trip tripItem = new Trip(parseDateString(date), tripId, distanceTraveled, movementType, time, parseRoutePoints(latLongPoints), parseElevationData(elevationData),calories);
+                Trip tripItem = new Trip(parseDateString(date), tripId, distanceTraveled, movementType, time, parseRoutePoints(latLongPoints), parseElevationData(elevationData),calories,weather,image);
                 tripHistory.add(tripItem);
                 Log.d("LOADED ROUTE POINTS:", parseRoutePoints(latLongPoints).toString());
 
@@ -236,6 +246,23 @@ public class DatabaseManager extends SQLiteOpenHelper {
 
         return tripHistory;
     }
+
+    private byte[] convertImagePathToByteArray(String filePath) {
+        try (InputStream inputStream = Files.newInputStream(Paths.get(filePath))) {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                byteArrayOutputStream.write(buffer, 0, bytesRead);
+            }
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle the exception according to your needs
+            return null;
+        }
+    }
+
 
     private Date parseDateString(String dateString) throws ParseException {
          SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
@@ -262,6 +289,8 @@ public class DatabaseManager extends SQLiteOpenHelper {
         values.put(COLUMN_TIME, trip.getTimeInSeconds());
         values.put(COLUMN_ELEVATION_DATA, convertElevationDataToJson(trip.getElevationData()));
         values.put(COLUMN_CALORIES_BURNED, trip.getCaloriesBurned());
+        values.put(COLUMN_WEATHER,trip.getWeather());
+        values.put(COLUMN_IMAGE,trip.getImage());
 
         long tripId = db.insert(TABLE_TRIP_HISTORY, null, values);
 
@@ -295,10 +324,44 @@ public class DatabaseManager extends SQLiteOpenHelper {
 
     public void saveReminder(long locationId, String reminder) {
         SQLiteDatabase db = getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_REMINDER_LOCATION_ID, locationId);
-        values.put(COLUMN_REMINDER_TEXT, reminder);
-        db.insert(TABLE_REMINDERS, null, values);
+
+        // Check if the reminder already exists for the given location
+        if (!reminderExists(locationId, reminder)) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_REMINDER_LOCATION_ID, locationId);
+            values.put(COLUMN_REMINDER_TEXT, reminder);
+            db.insert(TABLE_REMINDERS, null, values);
+        }
+
+        db.close();
+    }
+
+    private boolean reminderExists(long locationId, String reminder) {
+        SQLiteDatabase db = getReadableDatabase();
+
+        Cursor cursor = db.query(TABLE_REMINDERS,
+                new String[]{COLUMN_REMINDER_TEXT},
+                COLUMN_REMINDER_LOCATION_ID + " = ? AND " + COLUMN_REMINDER_TEXT + " = ?",
+                new String[]{String.valueOf(locationId), reminder},
+                null, null, null);
+
+        boolean exists = cursor != null && cursor.moveToFirst();
+        if (cursor != null) {
+            cursor.close();
+        }
+
+        return exists;
+    }
+
+    public void deleteReminders() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete(TABLE_REMINDERS, null, null);
+        db.close();
+    }
+
+    public void deleteSavedLocations() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete(TABLE_SAVED_LOCATIONS, null, null);
         db.close();
     }
 
@@ -421,4 +484,19 @@ public class DatabaseManager extends SQLiteOpenHelper {
         db.delete(TABLE_TRIP_HISTORY, null, null);
         db.close();
     }
+
+    public void removeReminder(String reminder, long locationID) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        // Delete the reminder entry from the TABLE_REMINDERS
+        db.delete(TABLE_REMINDERS,
+                COLUMN_REMINDER_TEXT + " = ? AND " + COLUMN_REMINDER_LOCATION_ID + " = ?",
+                new String[]{reminder, String.valueOf(locationID)});
+
+        Log.d("REMINDEREMOVE","REMOVED" + reminder + "WITH ID" + locationID);
+
+
+        db.close();
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.example.trailblazer;
 
+import static android.app.Activity.RESULT_OK;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -11,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -20,16 +23,23 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -39,17 +49,21 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.trailblazer.databinding.LoggingFragmentBinding;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
 public class LoggingFragment extends Fragment {
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
     RadioButton walkingRadioButton;
     RadioButton runningRadioButton;
     RadioButton cyclingRadioButton;
@@ -62,9 +76,13 @@ public class LoggingFragment extends Fragment {
     TextView textViewSteps;
     TextView textViewCaloriesBurned;
     String savedLocationReminders;
+    Spinner spinnerWeather;
+    ImageButton btnAddPhoto;
     private ReminderAdapter reminderAdapter;
     private LoggingFragmentViewModel viewModel;
     private DatabaseManager dbManager;
+    ActivityResultLauncher<String> requestCameraPermissionLauncher;
+    ActivityResultLauncher<Void> cameraLauncher;
 
     public LoggingFragment() {
     }
@@ -93,12 +111,114 @@ public class LoggingFragment extends Fragment {
         textViewTravelType = binding.textViewTravelType;
         textViewCaloriesBurned = binding.textViewCalories;
         RecyclerView recyclerViewReminders = binding.recyclerViewReminders;
+        spinnerWeather = binding.spinnerWeather;
+        btnAddPhoto = binding.btnAddPhoto;
+
+        String[] values = getResources().getStringArray(R.array.weather_array);
+
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, values);
+
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // Apply the adapter to the spinner
+        spinnerWeather.setAdapter(adapter);
+
+        // Set a listener to handle item selection
+        spinnerWeather.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                // Handle the selected item
+                String selectedValue = values[position];
+                viewModel.setWeather(position);
+                MovementTrackerService.updateWeather(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+            }
+        });
 
         reminderAdapter = new ReminderAdapter(new ArrayList<>());
         recyclerViewReminders.setAdapter(reminderAdapter);
         btnStartTracking.setOnClickListener(v -> toggleService());
+        btnAddPhoto.setOnClickListener(v -> checkCameraPermission());
+
+        requestCameraPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(), isGranted -> {
+                    if (isGranted) {
+                        // Permission granted, launch the camera
+                        takePicture();
+                    } else {
+                        // Permission denied
+                        Toast.makeText(getContext(), "Camera permission is required for image capture", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicturePreview(), result -> {
+                    if (result != null) {
+                        // Handle the captured image
+                        BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), result);
+                        btnAddPhoto.setBackground(bitmapDrawable);
+                        byte[] imageByteArray = convertBitmapToByteArray(result);
+                        MovementTrackerService.updateImage(saveImageToFile(imageByteArray));
+                    } else {
+                        // Handle the case where the user canceled the capture
+                        Toast.makeText(getContext(), "Image capture canceled", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
 
         return binding.getRoot();
+    }
+
+    private void checkCameraPermission() {
+        // Check if camera permission is granted
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            // Permission is already granted, launch the camera
+            takePicture();
+        } else {
+            // Request camera permission
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    private void takePicture() {
+        // Launch the camera to capture an image
+        cameraLauncher.launch(null);
+    }
+
+    private String saveImageToFile(byte[] imageData) {
+        // Get the directory for the app's private pictures directory.
+        File directory = new File(getActivity().getFilesDir(), "images");
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        // Create a unique file name based on the timestamp
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = timeStamp + ".jpg";
+
+        // Create the file in the specified directory
+        File imageFile = new File(directory, imageFileName);
+
+        try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+            fos.write(imageData);
+            return imageFile.getAbsolutePath();  // Return the file path
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle the exception according to your needs
+            return null;
+        }
+    }
+
+    private byte[] convertBitmapToByteArray(Bitmap bitmap) {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        return stream.toByteArray();
     }
 
     // Method to start the service
@@ -228,7 +348,7 @@ public class LoggingFragment extends Fragment {
         viewModel.setCalories(0);
         viewModel.setSavedLocationName("");
         reminderAdapter.setReminders(new ArrayList<>());
-    }
+        btnAddPhoto.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.button_design));    }
 
     // Method to start the service
     private boolean startService() {

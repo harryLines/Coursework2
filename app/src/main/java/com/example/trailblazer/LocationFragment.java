@@ -173,37 +173,7 @@ public class LocationFragment extends Fragment {
 
     private long saveLocationToDatabase(String locationName, LatLng selectedLatLng) {
         // Create a Data object with input parameters
-        Data inputData = new Data.Builder()
-                .putString("locationName", locationName)
-                .putDouble("latitude", selectedLatLng.latitude)
-                .putDouble("longitude", selectedLatLng.longitude)
-                .build();
-
-        // Create a OneTimeWorkRequest with your DatabaseSavedLocationInsertWorker
-        OneTimeWorkRequest saveLocationWorker =
-                new OneTimeWorkRequest.Builder(DatabaseSavedLocationInsertWorker.class)
-                        .setInputData(inputData)
-                        .build();
-
-        WorkManager.getInstance(requireContext()).enqueue(saveLocationWorker);
-
-        try {
-            // Get the result of the work request
-            WorkInfo workInfo = WorkManager.getInstance(requireContext()).getWorkInfoById(saveLocationWorker.getId()).get();
-
-            // Check if the work request was successful
-            if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
-                // Extract the locationId from the result data
-                return workInfo.getOutputData().getLong("locationId", -1);
-            } else {
-                // Handle the case where the work request failed
-                return -1L;
-            }
-        } catch (Exception e) {
-            // Handle exceptions, such as InterruptedException or ExecutionException
-            e.printStackTrace();
-            return -1L;
-        }
+        return dbManager.saveLocation(locationName,selectedLatLng);
     }
 
     private void getPlaceSuggestions(String query) {

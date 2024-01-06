@@ -18,20 +18,22 @@
             style="@style/Regular"/>
 
         <Button
+            android:id="@+id/btnClearReminders"
+            style="@style/Regular"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:background="@drawable/button_design"
-            android:text="Button"
-            style="@style/Regular"/>
+            android:text="Clear Reminders" />
 
         <Button
+            android:id="@+id/btnClearLocations"
+            style="@style/Regular"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:background="@drawable/button_design"
-            android:text="Button"
-            style="@style/Regular"/>
+            android:text="Clear Locations" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

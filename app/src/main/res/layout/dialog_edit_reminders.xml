@@ -1,44 +1,40 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
+        style="@style/Regular"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold"
         android:text="Reminders:"
-        style="@style/Regular"/>
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewReminders"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <TextView
-            android:id="@+id/textViewReminders"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            style="@style/Regular"/>
-    </ScrollView>
+        android:layout_weight="3"
+        tools:listitem="@layout/reminder_list_item_layout" />
 
     <EditText
         android:id="@+id/editTextNewReminder"
+        style="@style/Regular"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Add a new reminder"
-        style="@style/Regular" />
+        android:layout_weight="0.25"
+        android:hint="Add a new reminder" />
 
     <Button
         android:id="@+id/btnAddReminder"
+        style="@style/Regular"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_weight="0.25"
         android:background="@drawable/button_design"
-        android:text="Add Reminder"
-        style="@style/Regular"/>
+        android:text="Add Reminder" />
 
 </LinearLayout>
