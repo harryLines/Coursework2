@@ -17,6 +17,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
@@ -61,6 +63,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LoggingFragment extends Fragment {
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
@@ -80,7 +85,7 @@ public class LoggingFragment extends Fragment {
     ImageButton btnAddPhoto;
     private ReminderAdapter reminderAdapter;
     private LoggingFragmentViewModel viewModel;
-    private DatabaseManager dbManager;
+    private Database database;
     ActivityResultLauncher<String> requestCameraPermissionLauncher;
     ActivityResultLauncher<Void> cameraLauncher;
 
@@ -92,7 +97,7 @@ public class LoggingFragment extends Fragment {
                              Bundle savedInstanceState) {
         LoggingFragmentBinding binding = DataBindingUtil.inflate(inflater, R.layout.logging_fragment, container, false);
 
-        this.dbManager = DatabaseManager.getInstance(requireContext());
+        database = DatabaseManager.getInstance(requireContext());
         viewModel = new ViewModelProvider(this).get(LoggingFragmentViewModel.class);
 
         // Bind the ViewModel to the layout
@@ -287,41 +292,45 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
-    private void updateGoals() {
-        List<Goal> currentGoals = dbManager.loadGoals();
-
+    private List<Goal> updateProgress(List<Goal> currentGoals, double burnedCalories, double distanceCovered, int stepsTaken) {
         if (currentGoals != null) {
-            double burnedCalories = viewModel.getCalories().getValue();
-            double distanceCovered = viewModel.getDistance().getValue(); // Assuming distance is the metric for kilometers goal
-            int stepsTaken = viewModel.getSteps().getValue(); // Assuming steps is the metric for steps goal
 
             // Iterate through the goals and update them
             for (Goal goal : currentGoals) {
                 switch (goal.getMetricType()) {
                     case Goal.METRIC_CALORIES:
                         goal.setProgress(goal.getProgress() + burnedCalories);
-                        Log.d("Goal Update", "Calories goal updated. New progress: " + goal.getProgress() + "ADDED:");
                         break;
                     case Goal.METRIC_KILOMETERS:
                         goal.setProgress(goal.getProgress() + distanceCovered);
-                        Log.d("Goal Update", "Distance goal updated. New progress: " + goal.getProgress());
                         break;
                     case Goal.METRIC_STEPS:
                         goal.setProgress(goal.getProgress() + stepsTaken);
-                        Log.d("Goal Update", "Steps goal updated. New progress: " + goal.getProgress());
                         break;
                     default:
-                        Log.w("Goal Update", "Unsupported metric type: " + goal.getMetricType());
                 }
                 if (goal.getProgress() >= goal.getTarget()) {
                     goal.setComplete();
                 }
             }
-
-            // Save the updated goals back to the database
-            dbManager.updateGoals(currentGoals);
-            Log.d("Goal Update", "Goals updated and saved to the database.");
         }
+        return currentGoals;
+    }
+
+    private void updateGoals() {
+        double burnedCalories = viewModel.getCalories().getValue();
+        double distanceCovered = viewModel.getDistance().getValue(); // Assuming distance is the metric for kilometers goal
+        int stepsTaken = viewModel.getSteps().getValue();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            List<Goal> currentGoals = database.goalDao().loadGoals();
+            updateProgress(currentGoals,burnedCalories,distanceCovered,stepsTaken);
+            database.goalDao().updateGoals(currentGoals);
+            handler.post(() -> {
+            });
+        });
     }
 
 
@@ -401,7 +410,6 @@ public class LoggingFragment extends Fragment {
         public void onReceive(Context context, Intent intent) {
             if (Objects.requireNonNull(intent.getAction()).equals(MovementTrackerService.ACTION_DISTANCE_UPDATE)) {
                 viewModel.setDistance(intent.getDoubleExtra("distance", viewModel.getDistance().getValue()));
-                Log.d("DISTANCE", String.valueOf(viewModel.getDistance().getValue()));
                 viewModel.setSeconds(intent.getLongExtra("trackingDuration", viewModel.getSeconds().getValue()));
                 viewModel.setSteps(intent.getIntExtra("stepCount", viewModel.getSteps().getValue()));
                 viewModel.setCalories(intent.getIntExtra("caloriesBurned", viewModel.getCalories().getValue()));

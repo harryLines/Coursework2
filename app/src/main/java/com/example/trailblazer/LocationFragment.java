@@ -2,6 +2,8 @@ package com.example.trailblazer;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -35,6 +37,8 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LocationFragment extends Fragment {
 
@@ -42,47 +46,56 @@ public class LocationFragment extends Fragment {
     private SavedLocationsAdapter savedLocationsAdapter;
     private List<SavedLocation> savedLocations;
     private PlacesClient placesClient;
-    private DatabaseManager dbManager;
+    private Database database;
+    View view;
     public LocationFragment() {
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.location_fragment, container, false);
+        view = inflater.inflate(R.layout.location_fragment, container, false);
 
-        this.dbManager = DatabaseManager.getInstance(requireContext());
+        database = DatabaseManager.getInstance(requireContext());
 
         autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
         RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
 
         // Initialize RecyclerView and adapter
-        savedLocations = loadSavedLocations(); // Implement this method to load data from the text file
-        savedLocationsAdapter = new SavedLocationsAdapter(savedLocations,getContext());
-        recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
 
-        autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
+        executor.execute(() -> {
+            // Load saved locations from the database
+            savedLocations = database.savedLocationDao().loadSavedLocations();
+            savedLocationsAdapter = new SavedLocationsAdapter(savedLocations,getContext());
+            recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
+            recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
+            //Background work here
+            handler.post(() -> {
+                autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
 
-        // Initialize the Places API
-        Places.initialize(requireContext(), getString(R.string.google_maps_api_key));
-        placesClient = Places.createClient(requireContext());
+                // Initialize the Places API
+                Places.initialize(requireContext(), getString(R.string.google_maps_api_key));
+                placesClient = Places.createClient(requireContext());
 
-        // Set up adapter for location suggestions
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
-        autoCompleteTextView.setAdapter(adapter);
+                // Set up adapter for location suggestions
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
+                autoCompleteTextView.setAdapter(adapter);
 
-        // Set up listener for text changes to get location suggestions
-        autoCompleteTextView.addTextChangedListener(new SimpleTextWatcher() {
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Fetch location suggestions based on the current text in autoCompleteTextView
-                getPlaceSuggestions(s.toString());
-            }
-        });
-        Button btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
-        btnSaveLocation.setOnClickListener(v -> {
-            showSaveLocationDialog();
+                // Set up listener for text changes to get location suggestions
+                autoCompleteTextView.addTextChangedListener(new SimpleTextWatcher() {
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        // Fetch location suggestions based on the current text in autoCompleteTextView
+                        getPlaceSuggestions(s.toString());
+                    }
+                });
+                Button btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
+                btnSaveLocation.setOnClickListener(v -> {
+                    showSaveLocationDialog();
+                });
+            });
         });
 
         return view;
@@ -146,14 +159,22 @@ public class LocationFragment extends Fragment {
 
                     // Create a new SavedLocation instance
                     assert selectedLatLng != null;
-                    long locationId = saveLocationToDatabase(locationName, selectedLatLng);
-
                     // Create a new SavedLocation instance with the locationId
-                    SavedLocation newLocation = new SavedLocation(locationId, locationName, selectedLatLng, null);
+                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng, null);
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    Handler handler = new Handler(Looper.getMainLooper());
 
-                    // Update the RecyclerView with the new data
-                    savedLocations.add(newLocation);
-                    savedLocationsAdapter.notifyDataSetChanged();
+                    executor.execute(() -> {
+                        long locationId = database.savedLocationDao().saveLocation(newLocation);
+                        // Update the savedLocations list with the new data
+                        newLocation.setLocationID(locationId);
+                        savedLocations.add(newLocation);
+                        //Background work here
+                        handler.post(() -> {
+                            RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
+                            savedLocationsAdapter.notifyDataSetChanged(); // Notify adapter of dataset change
+                        });
+                    });
                 }).addOnFailureListener(exception -> {
                     if (exception instanceof ApiException) {
                         ApiException apiException = (ApiException) exception;
@@ -169,11 +190,6 @@ public class LocationFragment extends Fragment {
                 Toast.makeText(requireContext(), "Error: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private long saveLocationToDatabase(String locationName, LatLng selectedLatLng) {
-        // Create a Data object with input parameters
-        return dbManager.saveLocation(locationName,selectedLatLng);
     }
 
     private void getPlaceSuggestions(String query) {
@@ -217,13 +233,5 @@ public class LocationFragment extends Fragment {
         public void afterTextChanged(Editable s) {
 
         }
-    }
-
-    private List<SavedLocation> loadSavedLocations() {
-        List<SavedLocation> savedLocations;
-        // Load saved locations from the database
-        savedLocations = dbManager.loadSavedLocations();
-
-        return savedLocations;
     }
 }

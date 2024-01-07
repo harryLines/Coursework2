@@ -135,9 +135,6 @@ public class WeeklyGraphViewCalories extends View {
         // Reverse the order of dataPoints and dateList
         Collections.reverse(dateList);
 
-        Log.d("DataPoints", "Reversed DataPoints: " + dataPoints);
-        Log.d("DateList", "Reversed DateList: " + dateList);
-
         this.dataPoints = dataPoints;
         this.dateList = dateList;
         invalidate(); // Trigger onDraw

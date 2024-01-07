@@ -1,7 +1,5 @@
 package com.example.trailblazer;
 
-import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,7 +40,6 @@ public class ElevationFinder {
             }
         } catch (Exception e) {
             callback.onError("Failed to retrieve elevation: " + e.getMessage());
-            Log.e("ElevationFinder", "Exception in getElevation", e); // Log the exception for debugging
         } finally {
             executor.shutdown(); // Don't forget to shutdown the executor
         }
@@ -90,10 +87,8 @@ public class ElevationFinder {
 
                     // Parse the JSON response to extract elevation
                     return parseElevationFromJson(response.toString());
-                } else {
-                    // Handle the error
-                    Log.e("ElevationApiHelper", "Error response code: " + responseCode);
-                }
+                }  // Handle the error
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

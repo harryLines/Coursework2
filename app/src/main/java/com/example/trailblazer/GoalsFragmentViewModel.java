@@ -10,7 +10,6 @@ public class GoalsFragmentViewModel extends ViewModel {
     public MutableLiveData<List<Goal>> getGoalsList() {
         return goalsList;
     }
-
     // Function to update goalsList
     public void setGoalsList(List<Goal> goals) {
         goalsList.setValue(goals);

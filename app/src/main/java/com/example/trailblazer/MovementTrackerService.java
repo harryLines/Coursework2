@@ -45,6 +45,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MovementTrackerService extends Service implements StepDetector.StepListener {
     public static final String ACTION_DISTANCE_UPDATE = "com.example.coursework2.ACTION_DISTANCE_UPDATE";
@@ -52,8 +54,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private static final long MIN_ELEVATION_UPDATE_INTERVAL = 30000;
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "Movement Tracker Channel";
-    private static final String SECOND_CHANNEL_ID = "Movement Tracker Channel 2";
-
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
     private FusedLocationProviderClient fusedLocationClient;
@@ -74,7 +74,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private List<Double> elevationData;
     private long lastLocationPointTime;
     private long lastElevationDataTime;
-    private DatabaseManager databaseManager;
+    private Database database;
+    private TripDao tripDao;
+    private SavedLocationDao savedLocationDao;
     private boolean notificationUpdated = false;
     private static int currentWeather = -1;
     private static String currentImage;
@@ -82,9 +84,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("Location SRVC", "Service Started");
 
-        databaseManager = DatabaseManager.getInstance(getApplicationContext());
+        database = DatabaseManager.getInstance(getApplicationContext());
 
         // Initialize sensorManager
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -142,10 +143,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         double elapsedTimeInHours = (double) elapsedMillis / 3600000;
         double currentSpeedKMPH = (totalDistance / 1000) / elapsedTimeInHours;
 
-        Log.d("CALORIES CALC", "Elapsed Time (hours): " + elapsedTimeInHours);
-        Log.d("CALORIES CALC", "Total Distance (km): " + (totalDistance / 1000));
-        Log.d("CALORIES CALC", "Current Speed (KMPH): " + currentSpeedKMPH);
-
         if(movementType != Trip.MOVEMENT_CYCLE) {
             if (currentSpeedKMPH <= 2.7) {
                 MET = 2.3;
@@ -176,13 +173,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             }
         }
 
-        int caloriesBurned = (int) (MET * weight * elapsedTimeInHours);
-
-        Log.d("CALORIES CALC", "MET: " + MET);
-        Log.d("CALORIES CALC", "Weight: " + weight);
-        Log.d("CALORIES CALC", "Calories Burned: " + caloriesBurned);
-
-        return caloriesBurned;
+        return (int) (MET * weight * elapsedTimeInHours);
     }
 
 
@@ -198,7 +189,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
     @Override
     public void onStepDetected(int stepCount) {
-        Log.d(TAG, "Step count: " + stepCount);
 
         // Broadcast the updated step count if needed
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
@@ -210,7 +200,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         elapsedMillis = System.currentTimeMillis() - startTimeMillis;
         long seconds = elapsedMillis / 1000;
 
-        Log.d(TAG, "Tracking Duration: " + seconds + " seconds");
 
         // You can broadcast the updated duration if needed
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
@@ -221,7 +210,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(intent == null) {
-            Log.d(TAG, "Intent is NULL");
             stopSelf(); // Stop the service if the intent is null
             return START_NOT_STICKY;
         }
@@ -244,47 +232,29 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     public void onDestroy() {
         super.onDestroy();
         stopForeground(true);
-        saveTripToDatabase();
         stopLocationUpdates();
         timerHandler.removeCallbacks(timerRunnable);
         sensorManager.unregisterListener(stepDetector);
+        saveTripToDatabase();
         currentImage = null;
-        databaseManager.close();
     }
 
     private void saveTripToDatabase() {
         // Create a new Trip instance with the required data
         Trip trip = new Trip(
                 new Date(),  // You can replace this with the actual date
-                0,           // You can replace this with the actual trip ID
                 totalDistance,
                 movementType,
                 elapsedMillis / 1000,
-                routePoints,elevationData,caloriesBurned,currentWeather,currentImage);
+                routePoints, elevationData, caloriesBurned, currentWeather, currentImage);
 
-        Log.d("WEATHER", String.valueOf(currentWeather));
+            ExecutorService executor = Executors.newSingleThreadExecutor();
 
-        // Create a Data object with the necessary information
-        Data inputData = new Data.Builder()
-                .putLong("startTimeMillis", trip.getDate().getTime())
-                .putDouble("totalDistance", trip.getDistance())
-                .putInt("movementType", trip.getMovementType())
-                .putLong("elapsedMillis", trip.getTimeInSeconds() * 1000)
-                .putString("routePoints", new Gson().toJson(trip.getRoutePoints()))
-                .putString("elevationData", new Gson().toJson(trip.getElevationData()))
-                .putInt("caloriesBurned", trip.getCaloriesBurned())
-                .putInt("weather",trip.getWeather())
-                .putString("image",currentImage)
-                .build();
-
-        // Call the insertTripHistoryInBackground method from DatabaseManager
-        OneTimeWorkRequest saveTripWorker =
-                new OneTimeWorkRequest.Builder(DatabaseTripInsertWorker.class)
-                        .setInputData(inputData)
-                        .build();
-
-        // Enqueue the work request to the WorkManager
-        WorkManager.getInstance(getApplicationContext()).enqueue(saveTripWorker);
+            executor.execute(() -> {
+                tripDao = database.tripDao();
+                tripDao.insertTrip(trip);
+                database.close();
+            });
     }
 
     private void initLocationUpdates() {
@@ -349,7 +319,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 lastLocationPointTime = currentTime;
             }
 
-            Log.d(TAG, "Distance Traveled: " + totalDistance + " meters");
             sendMovementUpdateBroadcast(totalDistance, newLocation);
         }
     }
@@ -359,7 +328,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             @Override
             public void onElevationReceived(double elevation) {
                 elevationData.add(elevation);
-                Log.d(TAG, "Elevation: " + elevation + " meters");
             }
 
             @Override
@@ -394,6 +362,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
 
         boolean foundCloseLocation = false;
+        savedLocations = loadSavedLocations();
 
         // Check if the user is close to a saved location
         for (SavedLocation savedLocation : savedLocations) {
@@ -404,7 +373,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                     currentLocation.getLatitude(), currentLocation.getLongitude(),
                     savedLat, savedLng);
 
-            Log.d("Distance", distanceToSavedLocation + "m away from " + savedLocation.getName());
 
             // You can adjust the radius (in meters) as needed
             if (distanceToSavedLocation < 100) {
@@ -437,18 +405,21 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         long seconds = elapsedMillis / 1000;
         intent.putExtra("trackingDuration", seconds);
         intent.putExtra("stepCount", stepDetector.getStepCount());
-        Log.d("CARLOEIWS", String.valueOf(caloriesBurned));
         intent.putExtra("caloriesBurned", caloriesBurned);
         sendBroadcast(intent);
     }
 
     private List<SavedLocation> loadSavedLocations() {
-        // Load saved locations from the database
-        List<SavedLocation> savedLocations = databaseManager.loadSavedLocations();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        executor.execute(() -> {
+            savedLocationDao = database.savedLocationDao();
+            // Load saved locations from the database
+            savedLocations = savedLocationDao.loadSavedLocations();
+        });
 
         // Close the database connection
-        databaseManager.close();
-
         return savedLocations;
     }
 
@@ -481,7 +452,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
         return notificationBuilder.build();
     }
-
 
     private void createNotificationChannel() {
         CharSequence name = "Movement Tracker Channel";
@@ -526,8 +496,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // If a saved location is found, add information to the notification
         if (!savedLocationName.equals("NULL")) {
             notificationBuilder.setContentText("Your trip is being tracked near " + savedLocationName + "\nTap to view your reminders!");
-            // You can customize the notification further based on your requirements
-            // For example, you can add reminders or other information from the saved location
         }
 
         Notification updatedNotification = notificationBuilder.build();

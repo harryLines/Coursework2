@@ -1,16 +1,49 @@
 package com.example.trailblazer;
 
+import androidx.databinding.adapters.Converters;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 import java.util.List;
-
+@Entity(tableName = "saved_locations")
+@TypeConverters({com.example.trailblazer.Converters.class})
 public class SavedLocation {
-    long locationID;
-    private final String name;
-    private final LatLng latLng;
-    private List<String> reminders;
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "_id")
+    private long locationID;
+    @ColumnInfo(name = "name")
+    private String name;
+    @ColumnInfo(name = "latlng")
+    private LatLng latLng;
+    @Ignore
+    private List<Reminder> reminders;
     private boolean entered;
+
+    public SavedLocation(String name, LatLng latLng) {
+        this.name = name;
+        this.latLng = latLng;
+        this.reminders = new ArrayList<>(); // Initialize the list
+    }
+
+    // Define a constructor that includes the associated reminders
+    public SavedLocation(String name, LatLng latLng, List<Reminder> reminders) {
+        this.name = name;
+        this.latLng = latLng;
+        this.reminders = reminders;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setLatLng(LatLng latLng) {
+        this.latLng = latLng;
+    }
     public long getLocationID() {
         return locationID;
     }
@@ -25,18 +58,6 @@ public class SavedLocation {
         this.entered = entered;
     }
 
-    public SavedLocation(long locationID,String name, LatLng latLng,List<String> reminders) {
-        this.name = name;
-        this.latLng = latLng;
-        if(reminders == null) {
-            this.reminders = new ArrayList<>();
-        } else {
-            this.reminders = reminders;
-        }
-        this.locationID = locationID;
-        this.entered = false;
-    }
-
     public String getName() {
         return name;
     }
@@ -45,22 +66,22 @@ public class SavedLocation {
         return latLng;
     }
 
-    public List<String> getReminders() {
+    public List<Reminder> getReminders() {
         return reminders;
     }
 
-    public void addReminder(String reminder) {
+    public void addReminder(Reminder reminder) {
         reminders.add(reminder);
     }
 
-    public void setReminders(List<String> reminders) {
+    public void setReminders(List<Reminder> reminders) {
         this.reminders = reminders;
     }
 
     public String getRemindersAsString() {
         StringBuilder remindersString = new StringBuilder();
-        for (String reminder : reminders) {
-            remindersString.append(reminder).append(",");
+        for (Reminder reminder : reminders) {
+            remindersString.append(reminder.getReminderText()).append(",");
         }
         return remindersString.toString();
     }

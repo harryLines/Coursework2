@@ -1,6 +1,9 @@
 package com.example.trailblazer;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +28,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment {
     CheckBox checkboxWalking;
@@ -42,6 +47,9 @@ public class HomeFragment extends Fragment {
     private boolean prevWalkingChecked = true;
     private boolean prevRunningChecked = false;
     private boolean prevCyclingChecked = false;
+    private DatabaseManager databaseManager;
+    private Database database;
+    TripDao tripDao;
     public HomeFragment() {
     }
 
@@ -66,9 +74,9 @@ public class HomeFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
         binding = DataBindingUtil.inflate(inflater, R.layout.home_fragment, container, false);
-
+        database = DatabaseManager.getInstance(requireContext());
+        tripDao = database.tripDao();
         // Create an instance of your ViewModel
         viewModel = new ViewModelProvider(this).get(HomeFragmentViewModel.class);
 
@@ -191,7 +199,6 @@ public class HomeFragment extends Fragment {
                 dateListLastWeek.add(trip.getDate());
             }
         }
-
         return dateListLastWeek;
     }
 
@@ -249,74 +256,83 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateGraph() throws ParseException {
-        List<Trip> tripHistory = DatabaseManager.getInstance(requireContext()).loadTripHistory();
-        List<Trip> selectedTrips = new ArrayList<>();
-        Set<String> selectedMovementTypes = new HashSet<>();
-        // Filter the trips based on checkbox selections
-        for (Trip trip : tripHistory) {
-            switch (trip.getMovementType()) {
-                case Trip.MOVEMENT_WALK:
-                    if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
-                        selectedTrips.add(trip);
-                    }
-                    break;
-                case Trip.MOVEMENT_RUN:
-                    if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
-                        selectedTrips.add(trip);
-                    }
-                    break;
-                case Trip.MOVEMENT_CYCLE:
-                    if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
-                        selectedTrips.add(trip);
-                    }
-                    break;
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            List<Trip> tripHistory = tripDao.loadTripHistory();
+            List<Trip> selectedTrips = new ArrayList<>();
+
+            // Filter the trips based on checkbox selections
+            for (Trip trip : tripHistory) {
+                switch (trip.getMovementType()) {
+                    case Trip.MOVEMENT_WALK:
+                        if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
+                            selectedTrips.add(trip);
+                        }
+                        break;
+                    case Trip.MOVEMENT_RUN:
+                        if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
+                            selectedTrips.add(trip);
+                        }
+                        break;
+                    case Trip.MOVEMENT_CYCLE:
+                        if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
+                            selectedTrips.add(trip);
+                        }
+                        break;
+                }
             }
-        }
 
-        // Filter trips within the last week
-        List<Trip> selectedTripsLastWeek = filterTripsLastWeek(selectedTrips);
+            // Filter trips within the last week
+            List<Trip> selectedTripsLastWeek = filterTripsLastWeek(selectedTrips);
 
-        if(checkBoxDistance.isChecked()) {
+            handler.post(() -> {
+                // UI Thread work here
 
-            // Summarize distance and time for selected trips by day
-            Map<String, Double> distanceByDay = calculateDistanceByDay(selectedTripsLastWeek);
+                if (checkBoxDistance.isChecked()) {
+                    // Summarize distance and time for selected trips by day
+                    Map<String, Double> distanceByDay = calculateDistanceByDay(selectedTripsLastWeek);
 
-            // Set the data to the WeeklyGraphView
-            List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
-            weeklyGraphViewDistance.setDataPoints(
-                    convertMapToList(distanceByDay),
-                    dateListLastWeek
-            );
+                    // Set the data to the WeeklyGraphView
+                    List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
+                    weeklyGraphViewDistance.setDataPoints(
+                            convertMapToList(distanceByDay),
+                            dateListLastWeek
+                    );
 
-            Collections.reverse(dateListLastWeek);
-        } else {
-            // Summarize calorie values for selected trips by day
-            Map<String, Double> caloriesByDay = calculateCaloriesByDay(selectedTripsLastWeek);
+                    Collections.reverse(dateListLastWeek);
+                } else {
+                    // Summarize calorie values for selected trips by day
+                    Map<String, Double> caloriesByDay = calculateCaloriesByDay(selectedTripsLastWeek);
 
-            // Set the data to the WeeklyGraphViewCalories
-            List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
-            weeklyGraphViewCalories.setDataPoints(
-                    convertMapToListInt(caloriesByDay),
-                    dateListLastWeek
-            );
+                    // Set the data to the WeeklyGraphViewCalories
+                    List<Date> dateListLastWeek = getDateListLastWeek(selectedTripsLastWeek);
+                    weeklyGraphViewCalories.setDataPoints(
+                            convertMapToListInt(caloriesByDay),
+                            dateListLastWeek
+                    );
 
-            Collections.reverse(dateListLastWeek);
-        }
+                    Collections.reverse(dateListLastWeek);
+                }
 
-        // Calculate and set the average speed for each movement type
-        viewModel.setAvgWalkSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_WALK));
-        viewModel.setAvgRunSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_RUN));
-        viewModel.setAvgCycleSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_CYCLE));
+                // Calculate and set the average speed for each movement type
+                viewModel.setAvgWalkSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_WALK));
+                viewModel.setAvgRunSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_RUN));
+                viewModel.setAvgCycleSpeed(calculateAverageSpeed(selectedTripsLastWeek, Trip.MOVEMENT_CYCLE));
 
-        if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
-            selectedMovementTypes.add("Walking");
-        }
-        if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
-            selectedMovementTypes.add("Running");
-        }
-        if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
-            selectedMovementTypes.add("Cycling");
-        }
+                Set<String> selectedMovementTypes = new HashSet<>();
+                if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
+                    selectedMovementTypes.add("Walking");
+                }
+                if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
+                    selectedMovementTypes.add("Running");
+                }
+                if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
+                    selectedMovementTypes.add("Cycling");
+                }
+            });
+        });
     }
 
     private List<Integer> convertMapToListInt(Map<String, Double> data) {

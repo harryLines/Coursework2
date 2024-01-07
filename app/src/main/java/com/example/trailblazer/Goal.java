@@ -1,10 +1,18 @@
 package com.example.trailblazer;
 
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
+
+@Entity(tableName = "goals")
+@TypeConverters({Converters.class})
 public class Goal {
     public static final int TIMEFRAME_DAY = 0;
     public static final int TIMEFRAME_WEEK = 1;
@@ -12,13 +20,22 @@ public class Goal {
     public static final int METRIC_CALORIES = 0;
     public static final int METRIC_KILOMETERS = 1;
     public static final int METRIC_STEPS= 2;
-    final int metricType;
-    final int numberOfTimeframes;
-    final int timeframeType;
-    double progress;
-    final double target;
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "_id")
     final long goalID;
+    @ColumnInfo(name = "metric_type")
+    final int metricType;
+    @ColumnInfo(name = "number_of_timeframes")
+    final int numberOfTimeframes;
+    @ColumnInfo(name = "timeframe_type")
+    final int timeframeType;
+    @ColumnInfo(name = "progress")
+    double progress;
+    @ColumnInfo(name = "target")
+    final double target;
+    @ColumnInfo(name = "date_created")
     final Date dateCreated;
+    @ColumnInfo(name = "is_complete")
     boolean isComplete;
 
     public long getGoalID() {

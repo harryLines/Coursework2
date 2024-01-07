@@ -10,6 +10,9 @@ public class LoggingFragmentViewModel extends ViewModel {
     private final MutableLiveData<Integer> calories = new MutableLiveData<>(0);
     private final MutableLiveData<Long> seconds = new MutableLiveData<>(0L);
     private final MutableLiveData<String> savedLocationName = new MutableLiveData<>("");
+    public MutableLiveData<Integer> getWeather() {
+        return weather;
+    }
     private final MutableLiveData<Integer> weather = new MutableLiveData<>(0);
     private final MutableLiveData<Integer> steps = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> walkingChecked = new MutableLiveData<>(false);

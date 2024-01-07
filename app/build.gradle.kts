@@ -36,6 +36,7 @@ android {
 dependencies {
     implementation("com.github.bumptech.glide:glide:4.14.2")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
+    androidTestImplementation("junit:junit:4.12")
     annotationProcessor("com.github.bumptech.glide:compiler:4.14.2")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
@@ -46,8 +47,15 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.preference:preference:1.2.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation("androidx.test:core:1.5.0")
+    testImplementation("org.mockito:mockito-core:2.25.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation("androidx.test:core:1.5.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
         constraints {
             implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {

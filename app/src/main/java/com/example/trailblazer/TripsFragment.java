@@ -5,6 +5,8 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,14 +45,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TripsFragment extends Fragment{
     private MapView mapView;
     private ArrayAdapter<Trip> tripAdapter;
     View view;
-    private DatabaseManager dbManager;
+    private Database database;
     boolean showMap;
-    private static final String KEY_SHOW_MAP = "showMap";
+    List<Trip> tripHistory;
+    ListView listView;
     public TripsFragment() {
         showMap = false;
     }
@@ -59,75 +64,58 @@ public class TripsFragment extends Fragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.trips_fragment, container, false);
 
-        this.dbManager = DatabaseManager.getInstance(requireContext());
+        database = DatabaseManager.getInstance(requireContext());
+        loadTripHistory();
 
         // Initialize the ListView
-        ListView listView = view.findViewById(R.id.listViewTrips);
-
-        // Read trip history from file
-        List<Trip> tripList = loadTripHistory();
-        Log.d("TRIP LOAD", "Number of trips loaded: " + tripList.size());
-
-        // Reverse the list to display the most recent trip first
-        Collections.reverse(tripList);
-
-        // Create the custom adapter
-        tripAdapter = new TripAdapter(requireContext(), R.layout.trip_list_item, tripList);
-
-        // Set the adapter to the ListView
-        listView.setAdapter(tripAdapter);
-
-        // Set click listener for the ListView items
-        listView.setOnItemClickListener((parent, view1, position, id) -> {
-            // Get the selected trip using the adapter
-            showMap = !showMap;
-            Trip selectedTrip = tripAdapter.getItem(position);
-
-            if (selectedTrip != null) {
-                Log.d("ROUTES", String.valueOf(selectedTrip.getDistance()));
-                // Toggle the visibility of the ListView and MapFragment
-                int orientation = getResources().getConfiguration().orientation;
-                if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                    toggleListViewAndMapPortrait(selectedTrip);
-                } else {
-                    toggleListViewAndMapLandscape(selectedTrip);
-                }
-            }
-        });
+        listView = view.findViewById(R.id.listViewTrips);
 
         MapsInitializer.initialize(requireContext());
 
         return view;
     }
 
-    private List<Trip> loadTripHistory() {
-        List<Trip> tripHistory = new ArrayList<>();
-        Log.d("TRIP LOAD", "BEGIN LOAD");
+    private void loadTripHistory() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
 
-        try {
-            // Load trip history from the database
-            tripHistory = dbManager.loadTripHistory();
+        executor.execute(() -> {
+            tripHistory = database.tripDao().loadTripHistory();
+            handler.post(() -> {
+                Collections.reverse(tripHistory);
+                // Initialize the adapter here with tripHistory
+                tripAdapter = new TripAdapter(requireContext(), R.layout.trip_list_item, tripHistory);
+                // Set the adapter to the ListView
+                listView.setAdapter(tripAdapter);
 
-            Log.d("TRIP LOAD", "Number of trips loaded from the database: " + tripHistory.size());
+                // Set click listener for the ListView items
+                listView.setOnItemClickListener((parent, view1, position, id) -> {
+                    // Get the selected trip using the adapter
+                    showMap = !showMap;
+                    Trip selectedTrip = tripAdapter.getItem(position);
 
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return tripHistory;
+                    if (selectedTrip != null) {
+                        // Toggle the visibility of the ListView and MapFragment
+                        int orientation = getResources().getConfiguration().orientation;
+                        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                            toggleListViewAndMapPortrait(selectedTrip);
+                        } else {
+                            toggleListViewAndMapLandscape(selectedTrip);
+                        }
+                    }
+                });
+            });
+        });
     }
+
 
     @Override
     public void onResume() {
         super.onResume();
         // Update the statistics based on the previously selected timeframe
         loadTripHistory();
-
-        List<Trip> reversedTripList = new ArrayList<>(loadTripHistory());
+        List<Trip> reversedTripList = new ArrayList<>(tripHistory);
         Collections.reverse(reversedTripList);
-
-        tripAdapter.clear();
-        tripAdapter.addAll(reversedTripList);
-        tripAdapter.notifyDataSetChanged();
     }
 
     private void toggleListViewAndMapLandscape(Trip trip) {
@@ -136,11 +124,9 @@ public class TripsFragment extends Fragment{
             mapView.onCreate(null);
             mapView.onResume(); // needed to get the map to display immediately
 
-            Log.d("TRIP DATA", String.valueOf(trip.getRoutePoints()));
-
             List<Double> elevationData = trip.getElevationData();
 
-            List<SavedLocation> savedLocations = dbManager.loadSavedLocations();
+            List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
 
             mapView.getMapAsync(googleMap -> {
                 for (SavedLocation savedLocation : savedLocations) {
@@ -202,22 +188,27 @@ public class TripsFragment extends Fragment{
 
             List<Double> elevationData = trip.getElevationData();
 
-            List<SavedLocation> savedLocations = dbManager.loadSavedLocations();
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
+            executor.execute(() -> {
+                List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
+                handler.post(() -> {
+                    mapView.getMapAsync(googleMap -> {
+                        for (SavedLocation savedLocation : savedLocations) {
+                            LatLng locationLatLng = savedLocation.getLatLng();
+                            googleMap.addMarker(new MarkerOptions().position(locationLatLng).title(savedLocation.getName()));
+                        }
 
-            mapView.getMapAsync(googleMap -> {
-                for (SavedLocation savedLocation : savedLocations) {
-                    LatLng locationLatLng = savedLocation.getLatLng();
-                    googleMap.addMarker(new MarkerOptions().position(locationLatLng).title(savedLocation.getName()));
-                }
+                        // Set marker click listener
+                        googleMap.setOnMarkerClickListener(marker -> {
+                            String locationName = marker.getTitle();
+                            showRemindersForLocation(locationName); // Implement this method to show reminders for the selected location
+                            return true; // Consume the event to prevent the default behavior (opening the info window)
+                        });
 
-                // Set marker click listener
-                googleMap.setOnMarkerClickListener(marker -> {
-                    String locationName = marker.getTitle();
-                    showRemindersForLocation(locationName); // Implement this method to show reminders for the selected location
-                    return true; // Consume the event to prevent the default behavior (opening the info window)
+                        drawRoute(googleMap, trip.getRoutePoints());
+                    });
                 });
-
-                drawRoute(googleMap, trip.getRoutePoints());
             });
 
             LineChart lineChart = view.findViewById(R.id.lineChart);
@@ -273,28 +264,24 @@ public class TripsFragment extends Fragment{
 
         googleMap.addPolyline(polylineOptions);
 
-        Log.d("RoutePoints Size", String.valueOf(routePoints.size()));
-        Log.d("RoutePoints Contents", routePoints.toString());
-
         // Move camera to the first point in the route
         if (!routePoints.isEmpty()) {
             LatLng firstPoint = routePoints.get(0);
-            Log.d("FirstPOINT", String.valueOf(routePoints.get(0)));
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(firstPoint, 10f)); // Adjust zoom level here
         }
     }
 
     private void showRemindersForLocation(String locationName) {
         // Get reminders for the specified location name from the database
-        List<String> reminders = dbManager.loadRemindersForLocationName(locationName);
+        List<Reminder> reminders = database.reminderDao().loadRemindersForLocationName(locationName);
 
         // Create a StringBuilder to build the reminder message
         StringBuilder reminderMessage = new StringBuilder();
         reminderMessage.append("Reminders for ").append(locationName).append(":\n");
 
         // Append each reminder to the message
-        for (String reminder : reminders) {
-            reminderMessage.append("- ").append(reminder).append("\n");
+        for (Reminder reminder : reminders) {
+            reminderMessage.append("- ").append(reminder.getReminderText()).append("\n");
         }
 
         // Create and show the AlertDialog

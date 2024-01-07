@@ -19,31 +19,33 @@ public class ClearDataFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.cleardata_fragment, container, false);
-        dbManager = DatabaseManager.getInstance(requireContext());
+        Database database = DatabaseManager.getInstance(requireContext());
+
+        TripDao tripDao = database.tripDao();
+        ReminderDao reminderDao = database.reminderDao();
+        SavedLocationDao savedLocationDao = database.savedLocationDao();
 
         clearTripHistory = view.findViewById(R.id.btnClearTripHistory);
         clearTripHistory.setOnClickListener(v -> {
             // Use the injected DatabaseManager
             if (dbManager != null) {
-                dbManager.deleteTripHistory();
+                tripDao.deleteTripHistory();
             }
         });
 
         clearReminders = view.findViewById(R.id.btnClearReminders);
         clearReminders.setOnClickListener(v -> {
             if (dbManager != null) {
-                dbManager.deleteReminders();
+                reminderDao.deleteReminders();
             }
         });
 
         clearSavedLocations = view.findViewById(R.id.btnClearLocations);
         clearSavedLocations.setOnClickListener(v -> {
             if (dbManager != null) {
-                dbManager.deleteSavedLocations();
+                savedLocationDao.deleteSavedLocations();
             }
         });
-
-
         return view;
     }
 }

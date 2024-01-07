@@ -2,6 +2,8 @@ package com.example.trailblazer;
 
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,11 +26,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
     private String prevSelectedTimeframe = "1 Week";
-    private DatabaseManager dbManager;
+    private Database database;
     public ProgressFragment() {
     }
 
@@ -38,7 +42,7 @@ public class ProgressFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.progress_fragment, container, false);
 
-        this.dbManager = DatabaseManager.getInstance(requireContext());
+        database = DatabaseManager.getInstance(requireContext());
 
         // Get the Spinner from the layout
         Spinner spinnerDuration = view.findViewById(R.id.dropDownTimeframe);
@@ -79,7 +83,7 @@ public class ProgressFragment extends Fragment {
         });
 
         // Load trip history data
-        tripHistory = loadTripHistory();
+        loadTripHistory();
         return view;
     }
 
@@ -92,7 +96,7 @@ public class ProgressFragment extends Fragment {
         super.onResume();
         // Update the statistics based on the previously selected timeframe
         updateStatistics(prevSelectedTimeframe);
-        tripHistory = loadTripHistory();
+        loadTripHistory();
     }
 
 
@@ -216,15 +220,6 @@ public class ProgressFragment extends Fragment {
                           int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
 
         String movementTypeName = getMovementTypeName(movementType);
-
-        Log.d("UPDATE UI", "Movement Type: " + movementTypeName);
-        Log.d("UPDATE UI", "Total Distance: " + totalDistance);
-        Log.d("UPDATE UI", "Average Speed: " + totalSpeed);
-        Log.d("UPDATE UI", "Total Time: " + totalTime);
-        Log.d("UPDATE UI", "Distance Change: " + percentChangeDistance + "%");
-        Log.d("UPDATE UI", "Speed Change: " + percentChangeSpeed + "%");
-        Log.d("UPDATE UI", "Time Change: " + percentChangeTime + "%");
-        Log.d("UPDATE UI", "----------------------");
 
         // Update the UI based on the movement type
         switch (movementType) {
@@ -407,20 +402,19 @@ public class ProgressFragment extends Fragment {
         }
     }
 
-    private List<Trip> loadTripHistory() {
-        List<Trip> tripHistory = new ArrayList<>();
-        Log.d("TRIP LOAD", "BEGIN LOAD");
+    private void loadTripHistory() {
 
-        try {
-            // Load trip history from the database
-            tripHistory = dbManager.loadTripHistory();
-            Log.d("TRIP LOAD", "Number of trips loaded from the database: " + tripHistory.size());
+        // Load trip history from the database
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
 
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        executor.execute(() -> {
+            tripHistory = database.tripDao().loadTripHistory();
+            //Background work here
+            handler.post(() -> {
 
-        return tripHistory;
+            });
+        });
     }
 
     private void updateWalkingStats(double totalDistance, double totalSpeed, long totalTime,

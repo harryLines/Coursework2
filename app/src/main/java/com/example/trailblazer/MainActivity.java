@@ -57,15 +57,12 @@ public class MainActivity extends AppCompatActivity {
         // Check if there is an intent and if it contains the extra data
         if (getIntent() != null && getIntent().hasExtra("fragmentToShow") || getIntent().hasExtra("stopLogging")) {
             String fragmentTag = getIntent().getStringExtra("fragmentToShow");
-            Log.d("BUTTON", "NOT");
 
             // Navigate to the desired fragment based on the tag or identifier
             if (Objects.requireNonNull(fragmentTag).equals("Logging")) {
-                Log.d("BUTTON", "PRESSED NOT");
                 tabLayout.selectTab(tabLayout.getTabAt(2));
             } else {
                 if (getIntent().hasExtra("stopLogging")) {
-                    Log.d("BUTTON", "PRESSED NOT BUTTON");
                     boolean stopLogging = getIntent().getBooleanExtra("stopLogging", false);
                     if (stopLogging) {
                         Intent serviceIntent = new Intent(this, MovementTrackerService.class);
@@ -154,16 +151,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (intent != null && (intent.hasExtra("fragmentToShow") || intent.hasExtra("stopLogging"))) {
             String fragmentTag = intent.getStringExtra("fragmentToShow");
-            Log.d("BUTTON", "NOT");
 
             // Navigate to the desired fragment based on the tag or identifier
             if ("Logging".equals(fragmentTag)) {
-                Log.d("BUTTON", "PRESSED NOT");
                 TabLayout tabLayout = findViewById(R.id.tabLayout);
                 tabLayout.selectTab(tabLayout.getTabAt(2));
             } else {
                 if (intent.hasExtra("stopLogging")) {
-                    Log.d("BUTTON", "PRESSED NOT BUTTON");
                     boolean stopLogging = intent.getBooleanExtra("stopLogging", false);
                     if (stopLogging) {
                         Intent serviceIntent = new Intent(this, MovementTrackerService.class);

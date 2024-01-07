@@ -5,105 +5,117 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.databinding.adapters.Converters;
+import androidx.room.ColumnInfo;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
 
+import com.google.android.gms.maps.model.LatLng;
+
+import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 public class Provider extends ContentProvider {
-    private static final int URI_SAVED_LOCATIONS = 1;
-    private static final int URI_REMINDERS = 2;
-    private static final int URI_TRIP_HISTORY = 3;
-    DatabaseManager dbManager;
-    private static final UriMatcher uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+    private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+    private static final int REMINDERS = 100;
+    private static final int REMINDER_WITH_ID = 101;
+    private static final int TRIPS = 102;
+    private static final int TRIPS_WITH_ID = 103;
+    private static final int GOALS = 104;
+    private static final int GOALS_WITH_ID = 105;
+    private static final int SAVED_LOCATIONS = 106;
+    private static final int SAVED_LOCATIONS_WITH_ID = 107;
+    private Database database;
 
     static {
-        uriMatcher.addURI(Contract.AUTHORITY, "saved_locations", URI_SAVED_LOCATIONS);
-        uriMatcher.addURI(Contract.AUTHORITY, "reminders", URI_REMINDERS);
-        uriMatcher.addURI(Contract.AUTHORITY, "trip_history", URI_TRIP_HISTORY);
+        sUriMatcher.addURI(Contract.AUTHORITY, "reminders", REMINDERS);
+        sUriMatcher.addURI(Contract.AUTHORITY, "reminders/#", REMINDER_WITH_ID);
+        sUriMatcher.addURI(Contract.AUTHORITY, "goals", GOALS);
+        sUriMatcher.addURI(Contract.AUTHORITY, "goals/#", GOALS_WITH_ID);
+        sUriMatcher.addURI(Contract.AUTHORITY, "saved_locations", SAVED_LOCATIONS);
+        sUriMatcher.addURI(Contract.AUTHORITY, "saved_locations/#", SAVED_LOCATIONS_WITH_ID);
+        sUriMatcher.addURI(Contract.AUTHORITY, "trip_history", TRIPS);
+        sUriMatcher.addURI(Contract.AUTHORITY, "trip_history/#", TRIPS_WITH_ID);
     }
 
     @Override
     public boolean onCreate() {
-        dbManager = DatabaseManager.getInstance(requireContext());
-        return true;
+        database = DatabaseManager.getInstance(requireContext());
+        return false;
     }
 
+    @Nullable
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        SQLiteDatabase db = dbManager.getReadableDatabase();
-        Cursor cursor;
+    public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
+        MatrixCursor cursor;
+        int match = sUriMatcher.match(uri);
 
-        switch (uriMatcher.match(uri)) {
-            case URI_SAVED_LOCATIONS:
-                cursor = db.query(DatabaseManager.TABLE_SAVED_LOCATIONS, projection, selection, selectionArgs, null, null, sortOrder);
+        switch (match) {
+            case GOALS:
+                cursor = new MatrixCursor(new String[]{"_id", "metric_type","number_of_timeframes","timeframe_type","progress","target","date_created","is_complete"});
+                List<Goal> goals = database.goalDao().loadGoals(); // Implement this method according to your data source.
+                for (Goal goal : goals) {
+                    cursor.addRow(new Object[]{goal.getGoalID(), goal.getMetricType(), goal.getNumberOfTimeframes(), goal.getTimeframeType(), goal.getProgress(), goal.getTarget(), goal.getDateCreated(), goal.isComplete});
+                }
                 break;
-            case URI_REMINDERS:
-                cursor = db.query(DatabaseManager.TABLE_REMINDERS, projection, selection, selectionArgs, null, null, sortOrder);
+            case TRIPS:
+                cursor = new MatrixCursor(new String[]{"_id", "date","time","movement_type","distance_traveled","calories_burned","elevation_data","route_points","weather","image"});
+                List<Trip> trips = database.tripDao().loadTripHistory();
+                for(Trip trip : trips) {
+                    cursor.addRow(new Object[]{trip.getTripID(),trip.getDate(),trip.getTimeInSeconds(),trip.getDistance(),trip.getCaloriesBurned(),trip.getElevationData(),trip.getRoutePoints(),trip.getWeather(),trip.getImage()});
+                }
                 break;
-            case URI_TRIP_HISTORY:
-                Log.d("TRIP","IS A TRIP REQUEST");
-                cursor = db.query(DatabaseManager.TABLE_TRIP_HISTORY, projection, selection, selectionArgs, null, null, sortOrder);
+            case SAVED_LOCATIONS:
+                cursor = new MatrixCursor(new String[]{"_id", "name","latlng","reminders"});
+                List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
+                for(SavedLocation location : savedLocations) {
+                    cursor.addRow(new Object[]{location.getLocationID(),location.getName(),location.getLatLng(),location.getReminders()});
+                }
+                break;
+            case REMINDERS:
+                cursor = new MatrixCursor(new String[]{"_id", "location_id","reminder_text"});
+                List<Reminder> reminders = database.reminderDao().loadReminders();
+                for(Reminder reminder : reminders) {
+                    cursor.addRow(new Object[]{reminder.getId(),reminder.getLocationID(),reminder.getReminderText()});
+                }
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported URI: " + uri);
+                throw new IllegalArgumentException("Unknown URI: " + uri);
         }
 
-        // Notify the content resolver about changes in the data
-        cursor.setNotificationUri(Objects.requireNonNull(getContext()).getContentResolver(), uri);
+        if (getContext() != null) {
+            cursor.setNotificationUri(getContext().getContentResolver(), uri);
+        }
         return cursor;
     }
 
+    @Nullable
     @Override
-    public Uri insert(Uri uri, ContentValues values) {
-        SQLiteDatabase db = dbManager.getWritableDatabase();
-        long id;
+    public String getType(@NonNull Uri uri) {
+        return null;
+    }
 
-        switch (uriMatcher.match(uri)) {
-            case URI_SAVED_LOCATIONS:
-                id = db.insert(DatabaseManager.TABLE_SAVED_LOCATIONS, null, values);
-                break;
-            case URI_REMINDERS:
-                id = db.insert(DatabaseManager.TABLE_REMINDERS, null, values);
-                break;
-            case URI_TRIP_HISTORY:
-                id = db.insert(DatabaseManager.TABLE_TRIP_HISTORY, null, values);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported URI: " + uri);
-        }
-
-        // Notify the content resolver about changes in the data
-        Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
-
-        return ContentUris.withAppendedId(uri, id);
+    @Nullable
+    @Override
+    public Uri insert(@NonNull Uri uri, @Nullable ContentValues contentValues) {
+        return null;
     }
 
     @Override
-    public String getType(Uri uri) {
-        switch (uriMatcher.match(uri)) {
-            case URI_SAVED_LOCATIONS:
-                return "vnd.android.cursor.dir/saved_locations";
-            case URI_REMINDERS:
-                return "vnd.android.cursor.dir/reminders";
-            case URI_TRIP_HISTORY:
-                return "vnd.android.cursor.dir/trip_history";
-            default:
-                throw new IllegalArgumentException("Unsupported URI: " + uri);
-        }
-    }
-
-    @Override
-    public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, @Nullable String s, @Nullable String[] strings) {
         return 0;
     }
 
     @Override
-    public int update(@NonNull Uri uri, @Nullable ContentValues values, @Nullable String selection, @Nullable String[] selectionArgs) {
+    public int update(@NonNull Uri uri, @Nullable ContentValues contentValues, @Nullable String s, @Nullable String[] strings) {
         return 0;
     }
 }

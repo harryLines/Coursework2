@@ -2,6 +2,8 @@ package com.example.trailblazer;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,20 +15,23 @@ import android.widget.Spinner;
 
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.trailblazer.databinding.GoalsFragmentBinding;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class GoalsFragment extends Fragment {
     GoalsFragmentViewModel viewModel;
     GoalsFragmentBinding binding;
     Button btnAddGoal;
-    DatabaseManager dbManager;
+    Database database;
 
     public GoalsFragment() {
     }
@@ -39,12 +44,19 @@ public class GoalsFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(GoalsFragmentViewModel.class);
         btnAddGoal = binding.btnCreateGoal;
 
-        this.dbManager = DatabaseManager.getInstance(requireContext());
+        database = DatabaseManager.getInstance(requireContext());
 
         // Bind the ViewModel to the layout
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(this);
-        viewModel.setGoalsList(getGoalsFromDatabase());
+
+        setupGoalsList();
+
+        return binding.getRoot();
+    }
+
+    private void setupGoalsList() {
+        viewModel.setGoalsList(getGoalsFromDatabase().getValue());
 
         // Observe changes in the LiveData and update the adapter
         viewModel.getGoalsList().observe(getViewLifecycleOwner(), goals -> {
@@ -56,22 +68,36 @@ public class GoalsFragment extends Fragment {
         });
 
         btnAddGoal.setOnClickListener(v -> showAddGoalDialog());
-
-        return binding.getRoot();
     }
 
     private List<Goal> filterCompletedGoals(List<Goal> goals) {
         List<Goal> incompleteGoals = new ArrayList<>();
-        for (Goal goal : goals) {
-            if (!goal.isComplete) {
-                incompleteGoals.add(goal);
+
+        if (goals != null) { // Check if goals is not null
+            for (Goal goal : goals) {
+                if (!goal.isComplete) {
+                    incompleteGoals.add(goal);
+                }
             }
         }
+
         return incompleteGoals;
     }
 
-    private List<Goal> getGoalsFromDatabase() {
-        return dbManager.loadGoals();
+    private LiveData<List<Goal>> getGoalsFromDatabase() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        MutableLiveData<List<Goal>> goalList = new MutableLiveData<>();
+
+        executor.execute(() -> {
+            List<Goal> goals = database.goalDao().loadGoals();
+            handler.post(() -> {
+                goalList.postValue(goals); // Update LiveData on the main thread
+            });
+        });
+
+        return goalList;
     }
 
     private void showAddGoalDialog() {
@@ -137,11 +163,17 @@ public class GoalsFragment extends Fragment {
             Date currentDate = new Date();
             // Define the desired date format
             Goal newGoal = new Goal(0,metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
-            dbManager.addNewGoal(newGoal);
 
-            List<Goal> updatedGoalsList = dbManager.loadGoals();
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
 
-            viewModel.setGoalsList(updatedGoalsList);
+            executor.execute(() -> {
+                database.goalDao().addNewGoal(newGoal);
+                List<Goal> updatedGoalsList = database.goalDao().loadGoals();
+                handler.post(() -> {
+                    viewModel.setGoalsList(updatedGoalsList);
+                });
+            });
         });
 
         // Set up the negative button (Cancel)
