@@ -53,7 +53,7 @@ public class HomeFragment extends Fragment {
     public HomeFragment() {
     }
 
-    private double calculateAverageSpeed(List<Trip> trips, int movementType) {
+    public double calculateAverageSpeed(List<Trip> trips, int movementType) {
         double totalSpeed = 0.0;
         int count = 0;
 
@@ -216,7 +216,7 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private List<Trip> filterTripsLastWeek(List<Trip> trips) {
+    public List<Trip> filterTripsLastWeek(List<Trip> trips) {
         List<Trip> tripsLastWeek = new ArrayList<>();
         long oneWeekAgoMillis = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000); // 7 days in milliseconds
 
@@ -228,7 +228,7 @@ public class HomeFragment extends Fragment {
         return tripsLastWeek;
     }
 
-    private Map<String, Double> calculateDistanceByDay(List<Trip> walkingTrips) {
+    public Map<String, Double> calculateDistanceByDay(List<Trip> walkingTrips) {
         Map<String, Double> walkingDistanceByDay = new TreeMap<>(); // TreeMap for sorting by day
 
         for (Trip trip : walkingTrips) {

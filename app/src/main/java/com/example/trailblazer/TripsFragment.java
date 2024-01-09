@@ -1,6 +1,7 @@
 package com.example.trailblazer;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -56,6 +57,7 @@ public class TripsFragment extends Fragment{
     boolean showMap;
     List<Trip> tripHistory;
     ListView listView;
+    private Context fragmentContext;
     public TripsFragment() {
         showMap = false;
     }
@@ -64,15 +66,23 @@ public class TripsFragment extends Fragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.trips_fragment, container, false);
 
-        database = DatabaseManager.getInstance(requireContext());
-        loadTripHistory();
-
         // Initialize the ListView
         listView = view.findViewById(R.id.listViewTrips);
 
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        fragmentContext = requireContext();
+
+        // Now the context is guaranteed to be available
+        database = DatabaseManager.getInstance(requireContext());
         MapsInitializer.initialize(requireContext());
 
-        return view;
+        loadTripHistory();
     }
 
     private void loadTripHistory() {
@@ -84,7 +94,7 @@ public class TripsFragment extends Fragment{
             handler.post(() -> {
                 Collections.reverse(tripHistory);
                 // Initialize the adapter here with tripHistory
-                tripAdapter = new TripAdapter(requireContext(), R.layout.trip_list_item, tripHistory);
+                tripAdapter = new TripAdapter(fragmentContext, R.layout.trip_list_item, tripHistory);
                 // Set the adapter to the ListView
                 listView.setAdapter(tripAdapter);
 
@@ -126,47 +136,30 @@ public class TripsFragment extends Fragment{
 
             List<Double> elevationData = trip.getElevationData();
 
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        executor.execute(() -> {
             List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
+            handler.post(() -> {
+                if(trip.getRoutePoints() != null) {
+                    mapView.getMapAsync(googleMap -> {
+                        for (SavedLocation savedLocation : savedLocations) {
+                            LatLng locationLatLng = savedLocation.getLatLng();
+                            googleMap.addMarker(new MarkerOptions().position(locationLatLng).title(savedLocation.getName()));
+                        }
 
-            mapView.getMapAsync(googleMap -> {
-                for (SavedLocation savedLocation : savedLocations) {
-                    LatLng locationLatLng = savedLocation.getLatLng();
-                    googleMap.addMarker(new MarkerOptions().position(locationLatLng).title(savedLocation.getName()));
+                        // Set marker click listener
+                        googleMap.setOnMarkerClickListener(marker -> {
+                            String locationName = marker.getTitle();
+                            showRemindersForLocation(locationName); // Implement this method to show reminders for the selected location
+                            return true; // Consume the event to prevent the default behavior (opening the info window)
+                        });
+
+                        drawRoute(googleMap, trip.getRoutePoints());
+                    });
                 }
-
-                // Set marker click listener
-                googleMap.setOnMarkerClickListener(marker -> {
-                    String locationName = marker.getTitle();
-                    showRemindersForLocation(locationName); // Implement this method to show reminders for the selected location
-                    return true; // Consume the event to prevent the default behavior (opening the info window)
-                });
-                drawRoute(googleMap, trip.getRoutePoints());
             });
-
-            LineChart lineChart = view.findViewById(R.id.lineChart);
-
-            List<Entry> entries = new ArrayList<>();
-            for (int i = 0; i < elevationData.size(); i++) {
-                float durationInMinutes = (i * 30) / 60.0f; // Use 30-second intervals
-                entries.add(new Entry(durationInMinutes, elevationData.get(i).floatValue()));
-            }
-
-            LineDataSet dataSet = new LineDataSet(entries, "Elevation (m)");
-            dataSet.setColor(ThemeManager.getAccentColor(requireContext()));
-            dataSet.setValueTextColor(Color.WHITE);
-            LineData lineData = new LineData(dataSet);
-
-            XAxis xAxis = lineChart.getXAxis();
-            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-            xAxis.setValueFormatter(new XAxisValueFormatter()); // Set a custom formatter
-
-            YAxis leftAxis = lineChart.getAxisLeft();
-            YAxis rightAxis = lineChart.getAxisRight();
-            leftAxis.setDrawGridLines(false);
-            rightAxis.setDrawGridLines(false);
-
-            lineChart.setData(lineData);
-            lineChart.invalidate();
+        });
     }
 
     private void toggleListViewAndMapPortrait(Trip trip) {
@@ -193,48 +186,51 @@ public class TripsFragment extends Fragment{
             executor.execute(() -> {
                 List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
                 handler.post(() -> {
-                    mapView.getMapAsync(googleMap -> {
-                        for (SavedLocation savedLocation : savedLocations) {
-                            LatLng locationLatLng = savedLocation.getLatLng();
-                            googleMap.addMarker(new MarkerOptions().position(locationLatLng).title(savedLocation.getName()));
-                        }
+                    if(trip.getRoutePoints() != null) {
+                        mapView.getMapAsync(googleMap -> {
+                            for (SavedLocation savedLocation : savedLocations) {
+                                LatLng locationLatLng = savedLocation.getLatLng();
+                                googleMap.addMarker(new MarkerOptions().position(locationLatLng).title(savedLocation.getName()));
+                            }
 
-                        // Set marker click listener
-                        googleMap.setOnMarkerClickListener(marker -> {
-                            String locationName = marker.getTitle();
-                            showRemindersForLocation(locationName); // Implement this method to show reminders for the selected location
-                            return true; // Consume the event to prevent the default behavior (opening the info window)
+                            // Set marker click listener
+                            googleMap.setOnMarkerClickListener(marker -> {
+                                String locationName = marker.getTitle();
+                                showRemindersForLocation(locationName); // Implement this method to show reminders for the selected location
+                                return true; // Consume the event to prevent the default behavior (opening the info window)
+                            });
+
+                            drawRoute(googleMap, trip.getRoutePoints());
                         });
-
-                        drawRoute(googleMap, trip.getRoutePoints());
-                    });
+                    }
                 });
             });
+            if(elevationData != null) {
+                LineChart lineChart = view.findViewById(R.id.lineChart);
 
-            LineChart lineChart = view.findViewById(R.id.lineChart);
+                List<Entry> entries = new ArrayList<>();
+                for (int i = 0; i < elevationData.size(); i++) {
+                    float durationInMinutes = (i * 30) / 60.0f; // Use 30-second intervals
+                    entries.add(new Entry(durationInMinutes, elevationData.get(i).floatValue()));
+                }
 
-            List<Entry> entries = new ArrayList<>();
-            for (int i = 0; i < elevationData.size(); i++) {
-                float durationInMinutes = (i * 30) / 60.0f; // Use 30-second intervals
-                entries.add(new Entry(durationInMinutes, elevationData.get(i).floatValue()));
+                LineDataSet dataSet = new LineDataSet(entries, "Elevation (m)");
+                dataSet.setColor(ThemeManager.getAccentColor(requireContext()));
+                dataSet.setValueTextColor(Color.WHITE);
+                LineData lineData = new LineData(dataSet);
+
+                XAxis xAxis = lineChart.getXAxis();
+                xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+                xAxis.setValueFormatter(new XAxisValueFormatter()); // Set a custom formatter
+
+                YAxis leftAxis = lineChart.getAxisLeft();
+                YAxis rightAxis = lineChart.getAxisRight();
+                leftAxis.setDrawGridLines(false);
+                rightAxis.setDrawGridLines(false);
+
+                lineChart.setData(lineData);
+                lineChart.invalidate();
             }
-
-            LineDataSet dataSet = new LineDataSet(entries, "Elevation (m)");
-            dataSet.setColor(ThemeManager.getAccentColor(requireContext()));
-            dataSet.setValueTextColor(Color.WHITE);
-            LineData lineData = new LineData(dataSet);
-
-            XAxis xAxis = lineChart.getXAxis();
-            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-            xAxis.setValueFormatter(new XAxisValueFormatter()); // Set a custom formatter
-
-            YAxis leftAxis = lineChart.getAxisLeft();
-            YAxis rightAxis = lineChart.getAxisRight();
-            leftAxis.setDrawGridLines(false);
-            rightAxis.setDrawGridLines(false);
-
-            lineChart.setData(lineData);
-            lineChart.invalidate();
         } else {
             mapContainer.setVisibility(View.GONE);
             listView.setVisibility(View.VISIBLE);
@@ -273,28 +269,32 @@ public class TripsFragment extends Fragment{
 
     private void showRemindersForLocation(String locationName) {
         // Get reminders for the specified location name from the database
-        List<Reminder> reminders = database.reminderDao().loadRemindersForLocationName(locationName);
 
-        // Create a StringBuilder to build the reminder message
-        StringBuilder reminderMessage = new StringBuilder();
-        reminderMessage.append("Reminders for ").append(locationName).append(":\n");
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        executor.execute(() -> {
+            List<Reminder> reminders = database.reminderDao().loadRemindersForLocationName(locationName);
+            handler.post(() -> {
+                StringBuilder reminderMessage = new StringBuilder();
+                reminderMessage.append("Reminders for ").append(locationName).append(":\n");
 
-        // Append each reminder to the message
-        for (Reminder reminder : reminders) {
-            reminderMessage.append("- ").append(reminder.getReminderText()).append("\n");
-        }
+                // Append each reminder to the message
+                for (Reminder reminder : reminders) {
+                    reminderMessage.append("- ").append(reminder.getReminderText()).append("\n");
+                }
 
-        // Create and show the AlertDialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Reminders");
-        builder.setMessage(reminderMessage.toString());
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            // Handle OK button click if needed
+                // Create and show the AlertDialog
+                AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+                builder.setTitle("Reminders");
+                builder.setMessage(reminderMessage.toString());
+                builder.setPositiveButton("OK", (dialog, which) -> {
+                    // Handle OK button click if needed
+                });
+
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+            });
         });
-
-        AlertDialog alertDialog = builder.create();
-        alertDialog.show();
     }
-
 }
 

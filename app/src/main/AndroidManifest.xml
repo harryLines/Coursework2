@@ -35,8 +35,17 @@
             android:name=".MovementTrackerService"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="location|dataSync"
-            android:permission="TODO" />
+            android:foregroundServiceType="location|dataSync" />
+
+<!--        <activity-->
+<!--            android:name=".TestProviderActivity"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
 
         <activity
             android:name=".MainActivity"
@@ -57,7 +66,7 @@
 
         <provider
             android:name=".Provider"
-            android:authorities="com.example.trailblazer"
+            android:authorities="com.example.TrailBlazer.provider"
             android:enabled="true"
             android:exported="true"
             android:readPermission="com.example.TrailBlazer.READ_DATA"

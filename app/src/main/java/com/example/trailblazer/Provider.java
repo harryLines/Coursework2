@@ -8,6 +8,8 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -22,6 +24,8 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Provider extends ContentProvider {
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -36,20 +40,16 @@ public class Provider extends ContentProvider {
     private Database database;
 
     static {
-        sUriMatcher.addURI(Contract.AUTHORITY, "reminders", REMINDERS);
-        sUriMatcher.addURI(Contract.AUTHORITY, "reminders/#", REMINDER_WITH_ID);
-        sUriMatcher.addURI(Contract.AUTHORITY, "goals", GOALS);
-        sUriMatcher.addURI(Contract.AUTHORITY, "goals/#", GOALS_WITH_ID);
-        sUriMatcher.addURI(Contract.AUTHORITY, "saved_locations", SAVED_LOCATIONS);
-        sUriMatcher.addURI(Contract.AUTHORITY, "saved_locations/#", SAVED_LOCATIONS_WITH_ID);
+        sUriMatcher.addURI(Contract.AUTHORITY, "reminders", REMINDERS); //WORKS
+        sUriMatcher.addURI(Contract.AUTHORITY, "goals", GOALS); //WORKS
+        sUriMatcher.addURI(Contract.AUTHORITY, "saved_locations", SAVED_LOCATIONS); //WORKS
         sUriMatcher.addURI(Contract.AUTHORITY, "trip_history", TRIPS);
-        sUriMatcher.addURI(Contract.AUTHORITY, "trip_history/#", TRIPS_WITH_ID);
     }
 
     @Override
     public boolean onCreate() {
         database = DatabaseManager.getInstance(requireContext());
-        return false;
+        return true;
     }
 
     @Nullable
@@ -60,41 +60,36 @@ public class Provider extends ContentProvider {
 
         switch (match) {
             case GOALS:
-                cursor = new MatrixCursor(new String[]{"_id", "metric_type","number_of_timeframes","timeframe_type","progress","target","date_created","is_complete"});
+                cursor = new MatrixCursor(new String[]{"metric_type","number_of_timeframes","timeframe_type","progress","target","date_created","is_complete"});
                 List<Goal> goals = database.goalDao().loadGoals(); // Implement this method according to your data source.
                 for (Goal goal : goals) {
-                    cursor.addRow(new Object[]{goal.getGoalID(), goal.getMetricType(), goal.getNumberOfTimeframes(), goal.getTimeframeType(), goal.getProgress(), goal.getTarget(), goal.getDateCreated(), goal.isComplete});
+                    cursor.addRow(new Object[]{goal.getMetricType(), goal.getNumberOfTimeframes(), goal.getTimeframeType(), goal.getProgress(), goal.getTarget(), goal.getDateCreated(), goal.isComplete});
                 }
-                break;
+                return cursor;
             case TRIPS:
-                cursor = new MatrixCursor(new String[]{"_id", "date","time","movement_type","distance_traveled","calories_burned","elevation_data","route_points","weather","image"});
+                cursor = new MatrixCursor(new String[]{"date","time","movement_type","distance_traveled","calories_burned","elevation_data","route_points","weather","image"});
                 List<Trip> trips = database.tripDao().loadTripHistory();
                 for(Trip trip : trips) {
-                    cursor.addRow(new Object[]{trip.getTripID(),trip.getDate(),trip.getTimeInSeconds(),trip.getDistance(),trip.getCaloriesBurned(),trip.getElevationData(),trip.getRoutePoints(),trip.getWeather(),trip.getImage()});
+                    cursor.addRow(new Object[]{trip.getDate(),trip.getTimeInSeconds(),trip.getMovementType(),trip.getDistance(),trip.getCaloriesBurned(),trip.getElevationData(),trip.getRoutePoints(),trip.getWeather(),trip.getImage()});
                 }
-                break;
+                return cursor;
             case SAVED_LOCATIONS:
-                cursor = new MatrixCursor(new String[]{"_id", "name","latlng","reminders"});
+                cursor = new MatrixCursor(new String[]{"name","latlng","reminders"});
                 List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
                 for(SavedLocation location : savedLocations) {
-                    cursor.addRow(new Object[]{location.getLocationID(),location.getName(),location.getLatLng(),location.getReminders()});
+                    cursor.addRow(new Object[]{location.getName(),location.getLatLng(),location.getReminders()});
                 }
-                break;
+                return cursor;
             case REMINDERS:
-                cursor = new MatrixCursor(new String[]{"_id", "location_id","reminder_text"});
+                cursor = new MatrixCursor(new String[]{"location_id", "reminder_text"});
                 List<Reminder> reminders = database.reminderDao().loadReminders();
-                for(Reminder reminder : reminders) {
-                    cursor.addRow(new Object[]{reminder.getId(),reminder.getLocationID(),reminder.getReminderText()});
+                for (Reminder reminder : reminders) {
+                    cursor.addRow(new Object[]{reminder.getLocationID(), reminder.getReminderText()});
                 }
-                break;
+                return cursor;
             default:
                 throw new IllegalArgumentException("Unknown URI: " + uri);
         }
-
-        if (getContext() != null) {
-            cursor.setNotificationUri(getContext().getContentResolver(), uri);
-        }
-        return cursor;
     }
 
     @Nullable

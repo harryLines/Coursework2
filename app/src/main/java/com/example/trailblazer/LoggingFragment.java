@@ -196,7 +196,7 @@ public class LoggingFragment extends Fragment {
         cameraLauncher.launch(null);
     }
 
-    private String saveImageToFile(byte[] imageData) {
+    public String saveImageToFile(byte[] imageData) {
         // Get the directory for the app's private pictures directory.
         File directory = new File(getActivity().getFilesDir(), "images");
         if (!directory.exists()) {
@@ -220,7 +220,7 @@ public class LoggingFragment extends Fragment {
         }
     }
 
-    private byte[] convertBitmapToByteArray(Bitmap bitmap) {
+    public byte[] convertBitmapToByteArray(Bitmap bitmap) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
         return stream.toByteArray();
@@ -280,8 +280,6 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
-
-
     private void showStopTrackingDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
         builder.setTitle("Tracking Stopped")
@@ -324,9 +322,11 @@ public class LoggingFragment extends Fragment {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
 
+        Database database = DatabaseManager.getInstance(requireContext());
+
         executor.execute(() -> {
             List<Goal> currentGoals = database.goalDao().loadGoals();
-            updateProgress(currentGoals,burnedCalories,distanceCovered,stepsTaken);
+            updateProgress(currentGoals, burnedCalories, distanceCovered, stepsTaken);
             database.goalDao().updateGoals(currentGoals);
             handler.post(() -> {
             });

@@ -34,17 +34,9 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.gson.Gson;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -53,6 +45,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private static final long MIN_ROUTEPOINTS_UPDATE_INTERVAL = 60000;
     private static final long MIN_ELEVATION_UPDATE_INTERVAL = 30000;
     private static final int NOTIFICATION_ID = 1;
+    private String savedLocationName = "NULL";
+    private String previousSavedLocationName = "NULL";
+    boolean foundCloseLocation = false;
     private static final String CHANNEL_ID = "Movement Tracker Channel";
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
@@ -77,7 +72,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private Database database;
     private TripDao tripDao;
     private SavedLocationDao savedLocationDao;
-    private boolean notificationUpdated = false;
+    private boolean notificationCurrentlyNull;
     private static int currentWeather = -1;
     private static String currentImage;
 
@@ -114,6 +109,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
         initLocationUpdates();
         savedLocations = loadSavedLocations();
+
         startTimeMillis = System.currentTimeMillis();
         timerHandler = new Handler(Looper.getMainLooper());
         // Remove the following line since stepDetector is now initialized before this
@@ -143,7 +139,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         double elapsedTimeInHours = (double) elapsedMillis / 3600000;
         double currentSpeedKMPH = (totalDistance / 1000) / elapsedTimeInHours;
 
-        if(movementType != Trip.MOVEMENT_CYCLE) {
+        if (movementType != Trip.MOVEMENT_CYCLE) {
             if (currentSpeedKMPH <= 2.7) {
                 MET = 2.3;
             } else if (currentSpeedKMPH <= 4) {
@@ -189,7 +185,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
     @Override
     public void onStepDetected(int stepCount) {
-
         // Broadcast the updated step count if needed
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
         intent.putExtra("stepCount", stepCount);
@@ -200,7 +195,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         elapsedMillis = System.currentTimeMillis() - startTimeMillis;
         long seconds = elapsedMillis / 1000;
 
-
         // You can broadcast the updated duration if needed
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
         intent.putExtra("trackingDuration", seconds);
@@ -209,7 +203,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(intent == null) {
+        if (intent == null) {
             stopSelf(); // Stop the service if the intent is null
             return START_NOT_STICKY;
         }
@@ -223,8 +217,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
         startTimeMillis = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
-        startForeground(NOTIFICATION_ID, buildForegroundNotification());
-
+        createNotificationChannel();
+        startForeground(NOTIFICATION_ID, buildNotification());
         return START_STICKY;
     }
 
@@ -242,19 +236,18 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private void saveTripToDatabase() {
         // Create a new Trip instance with the required data
         Trip trip = new Trip(
-                new Date(),  // You can replace this with the actual date
+                new Date(),
                 totalDistance,
                 movementType,
                 elapsedMillis / 1000,
                 routePoints, elevationData, caloriesBurned, currentWeather, currentImage);
 
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
-            executor.execute(() -> {
-                tripDao = database.tripDao();
-                tripDao.insertTrip(trip);
-                database.close();
-            });
+        executor.execute(() -> {
+            tripDao = database.tripDao();
+            tripDao.insertTrip(trip);
+        });
     }
 
     private void initLocationUpdates() {
@@ -337,6 +330,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             }
         });
     }
+
     // Use a formula to calculate distance instead of outsourcing to an API to ensure speed and reliability
     private double calculateHaversineDistance(double startLat, double startLng, double endLat, double endLng) {
         double R = 6371;
@@ -361,46 +355,42 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private void sendMovementUpdateBroadcast(double distance, Location currentLocation) {
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
 
-        boolean foundCloseLocation = false;
-        savedLocations = loadSavedLocations();
+        boolean locationNameChanged = false;
 
-        // Check if the user is close to a saved location
         for (SavedLocation savedLocation : savedLocations) {
             double savedLat = savedLocation.getLatLng().latitude;
             double savedLng = savedLocation.getLatLng().longitude;
-
             double distanceToSavedLocation = calculateHaversineDistance(
                     currentLocation.getLatitude(), currentLocation.getLongitude(),
                     savedLat, savedLng);
-
-
-            // You can adjust the radius (in meters) as needed
+            // Check proximity
             if (distanceToSavedLocation < 100) {
-                // Set the saved location as entered to avoid showing the notification again
-
                 if (!savedLocation.isEntered()) {
+                    savedLocationName = savedLocation.getName();
                     savedLocation.setEntered(true);
-                    updateNotificationWithSavedLocation(savedLocation.getName());
+                    locationNameChanged = true;
+                    // Set intent extras
+                    foundCloseLocation = true;
+                    break;
                 }
-
-                // Set intent extras
-                intent.putExtra("savedLocationName", savedLocation.getName());
                 intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
-                foundCloseLocation = true;
-                notificationUpdated = false;
-                break; // Stop checking once a close location is found
-            } else if(!notificationUpdated){
-                notificationUpdated = true;
-                updateNotificationWithNoSavedLocation();
+            } else {
+                foundCloseLocation = false;
             }
         }
 
-        // If no close location is found, set the savedLocationName to "NULL"
         if (!foundCloseLocation) {
-            intent.putExtra("savedLocationName", "NULL");
-            intent.putExtra("savedLocationReminders", "NULL"); // Set reminders to an empty string or handle accordingly
+            savedLocationName = "NULL";
         }
 
+        if (!savedLocationName.equals(previousSavedLocationName) || locationNameChanged) {
+            // Update the notification only if the savedLocationName has changed or if it was just set
+            updateNotification();
+            previousSavedLocationName = savedLocationName;
+        }
+
+        // Set intent extras with the final savedLocationName value
+        intent.putExtra("savedLocationName", savedLocationName);
         intent.putExtra("distance", distance);
         long seconds = elapsedMillis / 1000;
         intent.putExtra("trackingDuration", seconds);
@@ -409,8 +399,16 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         sendBroadcast(intent);
     }
 
-    private List<SavedLocation> loadSavedLocations() {
+    private void updateNotification() {
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        notificationManager.notify(NOTIFICATION_ID, buildNotification());
+    }
 
+
+    private List<SavedLocation> loadSavedLocations() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         executor.execute(() -> {
@@ -421,36 +419,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
 
         // Close the database connection
         return savedLocations;
-    }
-
-    private Notification buildForegroundNotification() {
-        // Create a notification channel (for Android Oreo and higher)
-        createNotificationChannel();
-
-        // Create an intent for the notification
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.putExtra("fragmentToShow", "Logging");
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        // Create an intent for the button
-        Intent buttonIntent = new Intent(this, MainActivity.class);  // Replace YourButtonActionActivity with the actual activity you want to open on button click
-        buttonIntent.putExtra("fragmentToShow", "N/A");
-        buttonIntent.putExtra("stopLogging", true);
-        buttonIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent buttonPendingIntent = PendingIntent.getActivity(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        // Build the foreground notification
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Movement Tracker")
-                .setContentText("Your trip is being tracked.")
-                .setSmallIcon(R.drawable.log_tab_icon)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true) // Auto-cancel the notification when clicked
-                .setContentIntent(notificationPendingIntent)
-                .addAction(android.R.drawable.ic_media_pause, "Stop Tracking", buttonPendingIntent);
-
-        return notificationBuilder.build();
     }
 
     private void createNotificationChannel() {
@@ -466,10 +434,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         }
     }
 
-    private void updateNotificationWithSavedLocation(String savedLocationName) {
-        // Create a notification channel (for Android Oreo and higher)
-        createNotificationChannel();
-
+    private Notification buildNotification() {
         // Create an intent for the notification
         Intent notificationIntent = new Intent(this, MainActivity.class);
         notificationIntent.putExtra("fragmentToShow", "Logging");
@@ -477,7 +442,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Create an intent for the button
-        Intent buttonIntent = new Intent(this, MainActivity.class);  // Replace YourButtonActionActivity with the actual activity you want to open on button click
+        Intent buttonIntent = new Intent(this, MainActivity.class);
         buttonIntent.putExtra("fragmentToShow", "N/A");
         buttonIntent.putExtra("stopLogging", true);
         buttonIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -486,64 +451,17 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // Build the updated notification
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Movement Tracker")
-                .setContentText("Your trip is being tracked.")
+                .setContentText("Your trip is being tracked near " + savedLocationName + "\n Tap to view your reminders!")
                 .setSmallIcon(R.drawable.log_tab_icon)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true) // Auto-cancel the notification when clicked
                 .setContentIntent(notificationPendingIntent)
                 .addAction(android.R.drawable.ic_media_pause, "Stop Tracking", buttonPendingIntent);
 
-        // If a saved location is found, add information to the notification
-        if (!savedLocationName.equals("NULL")) {
-            notificationBuilder.setContentText("Your trip is being tracked near " + savedLocationName + "\nTap to view your reminders!");
+        if("NULL".equals(savedLocationName)) {
+            notificationBuilder.setContentText("Your trip is being tracked");
         }
 
-        Notification updatedNotification = notificationBuilder.build();
-
-        // Update the existing notification
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        notificationManager.notify(NOTIFICATION_ID, updatedNotification);
-    }
-
-    private void updateNotificationWithNoSavedLocation() {
-        // Create a notification channel (for Android Oreo and higher)
-        createNotificationChannel();
-
-        // Create an intent for the notification
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.putExtra("fragmentToShow", "Logging");
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        // Create an intent for the button
-        Intent buttonIntent = new Intent(this, MainActivity.class);  // Replace YourButtonActionActivity with the actual activity you want to open on button click
-        buttonIntent.putExtra("fragmentToShow", "N/A");
-        buttonIntent.putExtra("stopLogging", true);
-        buttonIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent buttonPendingIntent = PendingIntent.getActivity(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        // Build the updated notification
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Movement Tracker")
-                .setContentText("Your trip is being tracked.")
-                .setSmallIcon(R.drawable.log_tab_icon)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true) // Auto-cancel the notification when clicked
-                .setContentIntent(notificationPendingIntent)
-                .addAction(android.R.drawable.ic_media_pause, "Stop Tracking", buttonPendingIntent);
-
-        notificationBuilder.setContentText("Your trip is being tracked");
-
-        Notification updatedNotification = notificationBuilder.build();
-
-        // Update the existing notification
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        notificationManager.notify(NOTIFICATION_ID, updatedNotification);
+        return notificationBuilder.build();
     }
 }

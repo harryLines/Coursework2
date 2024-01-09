@@ -16,7 +16,7 @@ public class TripTest {
     @Test
     public void testGetSetDate() {
         Date date = new Date();
-        Trip trip = new Trip(date, 1, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
+        Trip trip = new Trip(date, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
 
         assertEquals(date, trip.getDate());
 
@@ -29,7 +29,7 @@ public class TripTest {
     @Test
     public void testGetSetMovementType() {
         Date date = new Date();
-        Trip trip = new Trip(date, 1, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
+        Trip trip = new Trip(date, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
 
         assertEquals(Trip.MOVEMENT_WALK, trip.getMovementType());
 
@@ -41,7 +41,7 @@ public class TripTest {
     @Test
     public void testGetSetDistance() {
         Date date = new Date();
-        Trip trip = new Trip(date, 1, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
+        Trip trip = new Trip(date, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
 
         assertEquals(10.0, trip.getDistance(), 0.001);
 
@@ -53,7 +53,7 @@ public class TripTest {
     @Test
     public void testGetSetTimeInSeconds() {
         Date date = new Date();
-        Trip trip = new Trip(date, 1, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
+        Trip trip = new Trip(date, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
 
         assertEquals(3600, trip.getTimeInSeconds());
 
@@ -69,7 +69,7 @@ public class TripTest {
         route.add(new LatLng(0, 0));
         route.add(new LatLng(1, 1));
 
-        Trip trip = new Trip(date, 1, 10.0, Trip.MOVEMENT_WALK, 3600, route, new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
+        Trip trip = new Trip(date, 10.0, Trip.MOVEMENT_WALK, 3600, route, new ArrayList<>(), 200, Trip.WEATHER_SUNNY, "image");
 
         assertEquals(route, trip.getRoutePoints());
 
@@ -89,7 +89,7 @@ public class TripTest {
         elevationData.add(100.0);
         elevationData.add(150.0);
 
-        Trip trip = new Trip(date, 1, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), elevationData, 200, Trip.WEATHER_SUNNY, "image");
+        Trip trip = new Trip(date, 10.0, Trip.MOVEMENT_WALK, 3600, new ArrayList<>(), elevationData, 200, Trip.WEATHER_SUNNY, "image");
 
         assertEquals(elevationData, trip.getElevationData());
 

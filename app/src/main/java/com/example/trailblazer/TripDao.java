@@ -11,7 +11,7 @@ public interface TripDao {
     @Query("SELECT * FROM trip_history")
     List<Trip> loadTripHistory();
     @Insert
-    void insertTrip(Trip trip);
+    long insertTrip(Trip trip);
     @Query("DELETE FROM trip_history")
     void deleteTripHistory();
 }

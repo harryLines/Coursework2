@@ -9,7 +9,7 @@ import java.util.List;
 @Dao
 public interface GoalDao {
     @Insert
-    void addNewGoal(Goal goal);
+    long addNewGoal(Goal goal);
     @Update
     void updateGoals(List<Goal> updatedGoals);
     @Query("SELECT * FROM goals")

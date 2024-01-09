@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,15 +26,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class GoalsFragment extends Fragment {
     GoalsFragmentViewModel viewModel;
     GoalsFragmentBinding binding;
     Button btnAddGoal;
-    Database database;
+    public Database database;
+    ExecutorService executor;
 
     public GoalsFragment() {
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        setupGoalsList();
     }
 
     @Override
@@ -56,10 +63,10 @@ public class GoalsFragment extends Fragment {
     }
 
     private void setupGoalsList() {
-        viewModel.setGoalsList(getGoalsFromDatabase().getValue());
+        LiveData<List<Goal>> goalsLiveData = getGoalsFromDatabase();
 
         // Observe changes in the LiveData and update the adapter
-        viewModel.getGoalsList().observe(getViewLifecycleOwner(), goals -> {
+        goalsLiveData.observe(getViewLifecycleOwner(), goals -> {
             // Filter out completed goals
             List<Goal> incompleteGoals = filterCompletedGoals(goals);
 
@@ -70,7 +77,22 @@ public class GoalsFragment extends Fragment {
         btnAddGoal.setOnClickListener(v -> showAddGoalDialog());
     }
 
-    private List<Goal> filterCompletedGoals(List<Goal> goals) {
+    public LiveData<List<Goal>> getGoalsFromDatabase() {
+        MutableLiveData<List<Goal>> goalListLiveData = new MutableLiveData<>();
+
+        executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            List<Goal> goalList = database.goalDao().loadGoals(); // Fetching data in the background
+            handler.post(() -> goalListLiveData.setValue(goalList)); // Updating LiveData on the main thread
+        });
+
+        return goalListLiveData;
+    }
+
+
+    public List<Goal> filterCompletedGoals(List<Goal> goals) {
         List<Goal> incompleteGoals = new ArrayList<>();
 
         if (goals != null) { // Check if goals is not null
@@ -82,22 +104,6 @@ public class GoalsFragment extends Fragment {
         }
 
         return incompleteGoals;
-    }
-
-    private LiveData<List<Goal>> getGoalsFromDatabase() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-
-        MutableLiveData<List<Goal>> goalList = new MutableLiveData<>();
-
-        executor.execute(() -> {
-            List<Goal> goals = database.goalDao().loadGoals();
-            handler.post(() -> {
-                goalList.postValue(goals); // Update LiveData on the main thread
-            });
-        });
-
-        return goalList;
     }
 
     private void showAddGoalDialog() {
@@ -162,9 +168,9 @@ public class GoalsFragment extends Fragment {
 
             Date currentDate = new Date();
             // Define the desired date format
-            Goal newGoal = new Goal(0,metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
+            Goal newGoal = new Goal(metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
 
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor = Executors.newSingleThreadExecutor();
             Handler handler = new Handler(Looper.getMainLooper());
 
             executor.execute(() -> {
@@ -172,14 +178,13 @@ public class GoalsFragment extends Fragment {
                 List<Goal> updatedGoalsList = database.goalDao().loadGoals();
                 handler.post(() -> {
                     viewModel.setGoalsList(updatedGoalsList);
+                    setupGoalsList();
                 });
             });
         });
 
         // Set up the negative button (Cancel)
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
-            dialog.dismiss();
-        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
 
         // Show the dialog
         builder.create().show();

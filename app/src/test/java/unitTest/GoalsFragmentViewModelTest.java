@@ -30,7 +30,6 @@ import com.example.trailblazer.GoalsFragmentViewModel;
 public class GoalsFragmentViewModelTest {
     @Rule
     public TestRule rule = new InstantTaskExecutorRule();
-
     @Mock
     private Observer<List<Goal>> observer;
     private GoalsFragmentViewModel viewModel;
@@ -78,8 +77,8 @@ public class GoalsFragmentViewModelTest {
     // Helper method to create a list of test goals
     private List<Goal> createTestGoals() {
         List<Goal> testGoals = new ArrayList<>();
-        testGoals.add(new Goal(1, Goal.METRIC_CALORIES, 2, Goal.TIMEFRAME_WEEK, 50, 100, new Date()));
-        testGoals.add(new Goal(2, Goal.METRIC_KILOMETERS, 3, Goal.TIMEFRAME_MONTH, 20, 50, new Date()));
+        testGoals.add(new Goal(Goal.METRIC_CALORIES, 2, Goal.TIMEFRAME_WEEK, 50, 100, new Date()));
+        testGoals.add(new Goal(Goal.METRIC_KILOMETERS, 3, Goal.TIMEFRAME_MONTH, 20, 50, new Date()));
         return testGoals;
     }
 

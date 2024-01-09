@@ -3,6 +3,8 @@ package com.example.trailblazer;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.RawQuery;
+import androidx.sqlite.db.SupportSQLiteQuery;
 
 import java.util.List;
 @Dao
@@ -22,8 +24,11 @@ public interface ReminderDao {
     void deleteReminders();
 
     @Insert
-    void addNewReminder(Reminder reminder);
+    long addNewReminder(Reminder reminder);
 
     @Query("SELECT EXISTS (SELECT 1 FROM reminders WHERE location_id = :locationId AND reminder_text = :reminder)")
     boolean reminderExists(long locationId, String reminder);
+
+    @RawQuery(observedEntities = Reminder.class)
+    List<Reminder> loadRemindersWithSelection(SupportSQLiteQuery query);
 }

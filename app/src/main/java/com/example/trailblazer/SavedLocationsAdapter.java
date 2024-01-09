@@ -78,26 +78,27 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
                 btnAddReminder.setOnClickListener(v -> {
                     String newReminderText = editTextNewReminder.getText().toString().trim();
                     Reminder newReminder = new Reminder(savedLocation.getLocationID(), newReminderText);
-                    if (!newReminderText.isEmpty() && !savedLocation.getReminders().contains(newReminder)) {
-                        savedLocation.addReminder(newReminder);
+                    if(savedLocation.getReminders() != null) {
+                        if (!newReminderText.isEmpty() && !savedLocation.getReminders().contains(newReminder)) {
+                            savedLocation.addReminder(newReminder);
 
-                        ExecutorService executorBtn = Executors.newSingleThreadExecutor();
-                        Handler handlerBtn = new Handler(Looper.getMainLooper());
+                            ExecutorService executorBtn = Executors.newSingleThreadExecutor();
+                            Handler handlerBtn = new Handler(Looper.getMainLooper());
 
-                        executorBtn.execute(() -> {
-                            for (Reminder reminder : savedLocation.getReminders()) {
-                                database.reminderDao().addNewReminder(reminder);
-                            }
-                            //Background work here
-                            handlerBtn.post(() -> {
-                                remindersAdapter.setReminders(savedLocation.getReminders());
-                                remindersAdapter.setLocationID(savedLocation.getLocationID());
-                                editTextNewReminder.setText("");
+                            executorBtn.execute(() -> {
+                                for (Reminder reminder : savedLocation.getReminders()) {
+                                    database.reminderDao().addNewReminder(reminder);
+                                }
+                                //Background work here
+                                handlerBtn.post(() -> {
+                                    remindersAdapter.setReminders(savedLocation.getReminders());
+                                    remindersAdapter.setLocationID(savedLocation.getLocationID());
+                                    editTextNewReminder.setText("");
+                                });
                             });
-                        });
+                        }
                     }
                 });
-
             });
         });
 

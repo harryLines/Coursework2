@@ -29,6 +29,7 @@ public class SavedLocation {
         this.name = name;
         this.latLng = latLng;
         this.reminders = new ArrayList<>(); // Initialize the list
+        this.entered = false;
     }
 
     // Define a constructor that includes the associated reminders
@@ -36,6 +37,7 @@ public class SavedLocation {
         this.name = name;
         this.latLng = latLng;
         this.reminders = reminders;
+        this.entered = false;
     }
     public void setName(String name) {
         this.name = name;

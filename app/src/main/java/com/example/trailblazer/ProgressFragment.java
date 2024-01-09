@@ -32,8 +32,9 @@ import java.util.concurrent.Executors;
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
     private String prevSelectedTimeframe = "1 Week";
-    private Database database;
+    public Database database;
     public ProgressFragment() {
+        tripHistory = new ArrayList<>();
     }
 
     @Override
@@ -82,8 +83,6 @@ public class ProgressFragment extends Fragment {
             }
         });
 
-        // Load trip history data
-        loadTripHistory();
         return view;
     }
 
@@ -95,7 +94,6 @@ public class ProgressFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Update the statistics based on the previously selected timeframe
-        updateStatistics(prevSelectedTimeframe);
         loadTripHistory();
     }
 
@@ -134,6 +132,7 @@ public class ProgressFragment extends Fragment {
         Date startDatePreviousTimeframe = calendar.getTime();
 
         // Populate tripHistoryCurrentTimeframe and tripHistoryPreviousTimeframe
+
         for (Trip trip : tripHistory) {
             if (trip.getDate().after(startDate) && trip.getDate().before(endDate)) {
                 tripHistoryCurrentTimeframe.add(trip);
@@ -145,11 +144,11 @@ public class ProgressFragment extends Fragment {
         // Calculate statistics for each movement type
         for (int movementType = 0; movementType <= 2; movementType++) {
             double totalDistanceCurrent = calculateTotalDistance(tripHistoryCurrentTimeframe, movementType);
-            double totalSpeedCurrent = calculateTotalSpeed(tripHistoryCurrentTimeframe, movementType);
+            double totalSpeedCurrent = calculateAverageSpeed(tripHistoryCurrentTimeframe, movementType);
             long totalTimeCurrent = calculateTotalTime(tripHistoryCurrentTimeframe, movementType);
 
             double totalDistancePrevious = calculateTotalDistance(tripHistoryPreviousTimeframe, movementType);
-            double totalSpeedPrevious = calculateTotalSpeed(tripHistoryPreviousTimeframe, movementType);
+            double totalSpeedPrevious = calculateAverageSpeed(tripHistoryPreviousTimeframe, movementType);
             long totalTimePrevious = calculateTotalTime(tripHistoryPreviousTimeframe, movementType);
 
             // Calculate percentage change compared to the previous timeframe
@@ -164,7 +163,7 @@ public class ProgressFragment extends Fragment {
     }
 
     // Helper methods to calculate total distance, speed, and time
-    private double calculateTotalDistance(List<Trip> trips, int movementType) {
+    public double calculateTotalDistance(List<Trip> trips, int movementType) {
         double totalDistance = 0;
         for (Trip trip : trips) {
             if (trip.getMovementType() == movementType) {
@@ -174,17 +173,32 @@ public class ProgressFragment extends Fragment {
         return totalDistance;
     }
 
-    private double calculateTotalSpeed(List<Trip> trips, int movementType) {
+    public double calculateAverageSpeed(List<Trip> trips, int movementType) {
         double totalSpeed = 0;
+        int count = 0;
+
         for (Trip trip : trips) {
             if (trip.getMovementType() == movementType) {
-                totalSpeed += calculateSpeed(trip.getDistance(), trip.getTimeInSeconds());
+                // Convert meters to kilometers and seconds to hours
+                double distanceKm = trip.getDistance() / 1000.0; // Convert meters to kilometers
+                double timeHours = trip.getTimeInSeconds() / 3600.0; // Convert seconds to hours
+
+                // Calculate speed in km/h
+                double speedKmph = distanceKm / timeHours;
+
+                totalSpeed += speedKmph;
+                count++;
             }
         }
-        return totalSpeed;
+
+        if (count > 0) {
+            return totalSpeed / count;
+        } else {
+            return 0;
+        }
     }
 
-    private long calculateTotalTime(List<Trip> trips, int movementType) {
+    public long calculateTotalTime(List<Trip> trips, int movementType) {
         long totalTime = 0;
         for (Trip trip : trips) {
             if (trip.getMovementType() == movementType) {
@@ -195,7 +209,7 @@ public class ProgressFragment extends Fragment {
     }
 
     // Helper method to calculate percentage change
-    private int calculatePercentageChange(double currentValue, double previousValue) {
+    public int calculatePercentageChange(double currentValue, double previousValue) {
         if (previousValue != 0) {
             double percentageChange = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
             return (int) percentageChange;
@@ -203,18 +217,6 @@ public class ProgressFragment extends Fragment {
             return 0; // Handle division by zero or when there's no previous value
         }
     }
-
-
-    private double calculateSpeed(double distance, long time) {
-        // Calculate average speed in kilometers per hour
-        if (time > 0) {
-            double speedInMetersPerSecond = distance / time;
-            return speedInMetersPerSecond * 3.6; // Convert to kilometers per hour
-        } else {
-            return 0; // Handle division by zero or negative time
-        }
-    }
-
 
     private void updateUI(int movementType, double totalDistance, double totalSpeed, long totalTime,
                           int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
@@ -412,7 +414,7 @@ public class ProgressFragment extends Fragment {
             tripHistory = database.tripDao().loadTripHistory();
             //Background work here
             handler.post(() -> {
-
+                updateStatistics(prevSelectedTimeframe);
             });
         });
     }
@@ -479,17 +481,17 @@ public class ProgressFragment extends Fragment {
         textViewCyclingTimeChange.setText(formatTimeChange(percentChangeTime));
     }
 
-    private String formatDistance(double distance) {
+    public String formatDistance(double distance) {
         // Format distance with 2 decimal points and append " km"
         return String.format(Locale.getDefault(), "%.2f km", distance/1000);
     }
 
-    private String formatSpeed(double speed) {
+    public String formatSpeed(double speed) {
         // Format speed to one decimal place and append " m/s"
         return String.format(Locale.getDefault(), "%.1f km/h", speed);
     }
 
-    private String formatTime(long timeInSeconds) {
+    public String formatTime(long timeInSeconds) {
         // Format time in hours, minutes, and seconds
         long hours = timeInSeconds / 3600;
         long minutes = (timeInSeconds % 3600) / 60;
@@ -504,7 +506,7 @@ public class ProgressFragment extends Fragment {
         }
     }
 
-    private String formatTimeChange(int percentChangeTime) {
+    public String formatTimeChange(int percentChangeTime) {
         // Format time change percentage with a sign
         return String.format(Locale.getDefault(), "%s%d%%", (percentChangeTime >= 0) ? "+" : "", percentChangeTime);
     }

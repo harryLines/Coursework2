@@ -9,4 +9,5 @@ public abstract class Database extends RoomDatabase {
     public abstract TripDao tripDao();
     public abstract GoalDao goalDao();
     public abstract ReminderDao reminderDao();
+
 }

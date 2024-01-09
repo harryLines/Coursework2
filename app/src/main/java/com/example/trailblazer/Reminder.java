@@ -9,7 +9,6 @@ import androidx.room.TypeConverters;
 @Entity(tableName = "reminders")
 @TypeConverters({Converters.class})
 public class Reminder {
-
     public int getId() {
         return id;
     }

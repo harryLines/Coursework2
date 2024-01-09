@@ -75,7 +75,6 @@ public class Trip {
     public void setCaloriesBurned(int caloriesBurned) {
         this.caloriesBurned = caloriesBurned;
     }
-
     public Trip(Date date, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories, int weather, String image) {
         this.date = date;
         this.movementType = movementType;
@@ -89,8 +88,8 @@ public class Trip {
     }
 
     public Trip() {
-    }
 
+    }
 
     public Date getDate() {
         return date;

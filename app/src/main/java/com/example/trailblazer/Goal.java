@@ -20,9 +20,14 @@ public class Goal {
     public static final int METRIC_CALORIES = 0;
     public static final int METRIC_KILOMETERS = 1;
     public static final int METRIC_STEPS= 2;
+
+    public void setGoalID(long goalID) {
+        this.goalID = goalID;
+    }
+
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "_id")
-    final long goalID;
+    long goalID;
     @ColumnInfo(name = "metric_type")
     final int metricType;
     @ColumnInfo(name = "number_of_timeframes")
@@ -92,13 +97,12 @@ public class Goal {
     public int getMetricType() {
         return metricType;
     }
-    public Goal(long goalID, int metricType, int numberOfTimeframes, int timeframeType, double progress, double target, Date dateCreated) {
+    public Goal(int metricType, int numberOfTimeframes, int timeframeType, double progress, double target, Date dateCreated) {
         this.metricType = metricType;
         this.numberOfTimeframes = numberOfTimeframes;
         this.timeframeType = timeframeType;
         this.progress = progress;
         this.target = target;
-        this.goalID = goalID;
         this.dateCreated = dateCreated;
         this.isComplete = false;
     }
@@ -173,4 +177,7 @@ public class Goal {
         return target;
     }
 
+    public boolean isComplete() {
+        return isComplete;
+    }
 }
