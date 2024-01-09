@@ -8,7 +8,7 @@ import java.util.List;
 @Dao
 public interface SavedLocationDao {
     @Insert
-    long saveLocation(SavedLocation location);
+    long addNewLocation(SavedLocation location);
     // Delete reminders
 
     @Query("DELETE FROM saved_locations")

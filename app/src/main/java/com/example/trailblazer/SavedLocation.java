@@ -32,13 +32,6 @@ public class SavedLocation {
         this.entered = false;
     }
 
-    // Define a constructor that includes the associated reminders
-    public SavedLocation(String name, LatLng latLng, List<Reminder> reminders) {
-        this.name = name;
-        this.latLng = latLng;
-        this.reminders = reminders;
-        this.entered = false;
-    }
     public void setName(String name) {
         this.name = name;
     }

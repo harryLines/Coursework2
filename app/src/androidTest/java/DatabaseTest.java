@@ -118,7 +118,7 @@ public class DatabaseTest {
         // Insert some test data
         String locationName = "Home";
         SavedLocation location1 = new SavedLocation(locationName,new LatLng(37.3861,122.0839));
-        long locationID = savedLocationDao.saveLocation(location1);
+        long locationID = savedLocationDao.addNewLocation(location1);
 
         Reminder reminder1 = new Reminder(locationID, "Reminder1");
         Reminder reminder2 = new Reminder(locationID, "Reminder2");
@@ -202,8 +202,8 @@ public class DatabaseTest {
     public void testDeleteSavedLocations() {
         SavedLocation location1 = new SavedLocation("Home",new LatLng(37.3861,122.0839));
         SavedLocation location2 = new SavedLocation("Work",new LatLng(35.3861,123.0839));
-        savedLocationDao.saveLocation(location1);
-        savedLocationDao.saveLocation(location2);
+        savedLocationDao.addNewLocation(location1);
+        savedLocationDao.addNewLocation(location2);
 
         savedLocationDao.deleteSavedLocations();
 
@@ -215,8 +215,8 @@ public class DatabaseTest {
     public void testLoadSavedLocations() {
         SavedLocation location1 = new SavedLocation("Home",new LatLng(37.3861,122.0839));
         SavedLocation location2 = new SavedLocation("Work",new LatLng(35.3861,123.0839));
-        savedLocationDao.saveLocation(location1);
-        savedLocationDao.saveLocation(location2);
+        savedLocationDao.addNewLocation(location1);
+        savedLocationDao.addNewLocation(location2);
 
         List<SavedLocation> savedLocations = savedLocationDao.loadSavedLocations();
 
@@ -227,7 +227,7 @@ public class DatabaseTest {
     @Test
     public void testSaveAndLoadLocations() {
         SavedLocation location = new SavedLocation("Home",new LatLng(37.3861,122.0839));
-        long locationID = savedLocationDao.saveLocation(location);
+        long locationID = savedLocationDao.addNewLocation(location);
         List<SavedLocation> locations = savedLocationDao.loadSavedLocations();
         assertEquals(locations.get(0).getLocationID(), locationID);
     }

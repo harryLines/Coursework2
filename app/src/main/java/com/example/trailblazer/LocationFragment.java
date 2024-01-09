@@ -18,10 +18,6 @@ import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.Data;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Status;
@@ -160,12 +156,12 @@ public class LocationFragment extends Fragment {
                     // Create a new SavedLocation instance
                     assert selectedLatLng != null;
                     // Create a new SavedLocation instance with the locationId
-                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng, null);
+                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng);
                     ExecutorService executor = Executors.newSingleThreadExecutor();
                     Handler handler = new Handler(Looper.getMainLooper());
 
                     executor.execute(() -> {
-                        long locationId = database.savedLocationDao().saveLocation(newLocation);
+                        long locationId = database.savedLocationDao().addNewLocation(newLocation);
                         // Update the savedLocations list with the new data
                         newLocation.setLocationID(locationId);
                         savedLocations.add(newLocation);

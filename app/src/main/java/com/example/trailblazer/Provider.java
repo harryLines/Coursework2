@@ -234,11 +234,30 @@ public class Provider extends ContentProvider {
                 } else {
                     throw new android.database.SQLException("Failed to insert row into " + uri);
                 }
-
                 break;
             case SAVED_LOCATIONS:
+                String name;
+                LatLng latlng;
+
+                if (contentValues.containsKey("name")) {
+                    name = contentValues.getAsString("name");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("latlng")) {
+                    latlng = Converters.fromString(contentValues.getAsString("latlng"));
+                } else {
+                    return null;
+                }
+                SavedLocation newLocation = new SavedLocation(name,latlng);
+                locationID = database.savedLocationDao().addNewLocation(newLocation);
+                if (locationID > 0) {
+                    returnUri = ContentUris.withAppendedId(uri, locationID);
+                } else {
+                    throw new android.database.SQLException("Failed to insert row into " + uri);
+                }
+
                 break;
-            // Handle other cases (GOALS, TRIPS, etc.) similarly
             default:
                 throw new IllegalArgumentException("Insertion is not supported for " + uri);
         }
