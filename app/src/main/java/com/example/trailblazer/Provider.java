@@ -6,37 +6,25 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.databinding.adapters.Converters;
-import androidx.room.ColumnInfo;
-import androidx.room.PrimaryKey;
-import androidx.room.TypeConverters;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Provider extends ContentProvider {
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
     private static final int REMINDERS = 100;
-    private static final int REMINDER_WITH_ID = 101;
     private static final int TRIPS = 102;
-    private static final int TRIPS_WITH_ID = 103;
     private static final int GOALS = 104;
-    private static final int GOALS_WITH_ID = 105;
     private static final int SAVED_LOCATIONS = 106;
-    private static final int SAVED_LOCATIONS_WITH_ID = 107;
     private Database database;
 
     static {
@@ -101,9 +89,173 @@ public class Provider extends ContentProvider {
     @Nullable
     @Override
     public Uri insert(@NonNull Uri uri, @Nullable ContentValues contentValues) {
-        return null;
+        final int match = sUriMatcher.match(uri);
+        Uri returnUri = null;
+
+        switch (match) {
+            case REMINDERS:
+                long locationID;
+                String reminderText;
+                assert contentValues != null;
+                if (contentValues.containsKey("location_id")) {
+                    locationID = contentValues.getAsLong("location_id");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("reminder_text")) {
+                    reminderText = contentValues.getAsString("reminder_text");
+                } else {
+                    return null;
+                }
+                // Assuming you have a method in your DAO to insert a reminder
+                Reminder newReminder = new Reminder(locationID,reminderText);
+                long reminderId = database.reminderDao().addNewReminder(newReminder);
+                if (reminderId > 0) {
+                    returnUri = ContentUris.withAppendedId(uri, reminderId);
+                } else {
+                    throw new android.database.SQLException("Failed to insert row into " + uri);
+                }
+                break;
+            case GOALS:
+                int metricType;
+                int numberOfTimeframes;
+                int timeframeType;
+                double progress;
+                double target;
+                Date dateCreated;
+                boolean isComplete;
+
+                assert contentValues != null;
+                if (contentValues.containsKey("metric_type")) {
+                    metricType = contentValues.getAsInteger("metric_type");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("number_of_timeframes")) {
+                    numberOfTimeframes = contentValues.getAsInteger("number_of_timeframes");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("timeframe_type")) {
+                    timeframeType = contentValues.getAsInteger("timeframe_type");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("progress")) {
+                    progress = contentValues.getAsLong("progress");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("target")) {
+                    target = contentValues.getAsLong("target");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("date_created")) {
+                    dateCreated = Converters.fromTimestamp(contentValues.getAsLong("date_created"));
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("is_complete")) {
+                    isComplete = contentValues.getAsBoolean("is_complete");
+                } else {
+                    return null;
+                }
+                Goal newGoal = new Goal(metricType, numberOfTimeframes, timeframeType,progress,target,dateCreated,isComplete);
+                long goalID = database.goalDao().addNewGoal(newGoal);
+                if (goalID > 0) {
+                    returnUri = ContentUris.withAppendedId(uri, goalID);
+                } else {
+                    throw new android.database.SQLException("Failed to insert row into " + uri);
+                }
+                break;
+            case TRIPS:
+                Date date;
+                int movementType;
+                double distance;
+                int timeInSeconds;
+                List<LatLng> routePoints;
+                List<Double> elevationData;
+                int caloriesBurned;
+                int weather;
+                String image;
+
+                assert contentValues != null;
+                if (contentValues.containsKey("date")) {
+                    date = Converters.fromTimestamp(contentValues.getAsLong("date"));
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("time")) {
+                    timeInSeconds = contentValues.getAsInteger("time");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("movement_type")) {
+                    movementType = contentValues.getAsInteger("movement_type");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("distance_traveled")) {
+                    distance = contentValues.getAsDouble("distance_traveled");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("calories_burned")) {
+                    caloriesBurned = contentValues.getAsInteger("calories_burned");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("elevation_data")) {
+                    elevationData = Converters.toDoubleList(contentValues.getAsString("elevation_data"));
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("route_points")) {
+                    routePoints = Converters.toLatLngList(contentValues.getAsString("route_points"));
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("weather")) {
+                    weather = contentValues.getAsInteger("weather");
+                } else {
+                    return null;
+                }
+                if (contentValues.containsKey("image")) {
+                    image = contentValues.getAsString("image");
+                } else {
+                    return null;
+                }
+
+                Trip newTrip = new Trip(date,distance,movementType,timeInSeconds,routePoints,elevationData,caloriesBurned,weather,image);
+                long tripID = database.tripDao().addNewTrip(newTrip);
+                if (tripID > 0) {
+                    returnUri = ContentUris.withAppendedId(uri, tripID);
+                } else {
+                    throw new android.database.SQLException("Failed to insert row into " + uri);
+                }
+
+                break;
+            case SAVED_LOCATIONS:
+                break;
+            // Handle other cases (GOALS, TRIPS, etc.) similarly
+            default:
+                throw new IllegalArgumentException("Insertion is not supported for " + uri);
+        }
+
+        getContext().getContentResolver().notifyChange(uri, null);
+        return returnUri;
     }
 
+    public Date parseDateString(String dateString) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // Adjust the pattern to match your date format
+        try {
+            return dateFormat.parse(dateString);
+        } catch (ParseException e) {
+            Log.e("Provider", "Error parsing the date: " + e.getMessage());
+            return null; // or handle the error as appropriate
+        }
+    }
     @Override
     public int delete(@NonNull Uri uri, @Nullable String s, @Nullable String[] strings) {
         return 0;

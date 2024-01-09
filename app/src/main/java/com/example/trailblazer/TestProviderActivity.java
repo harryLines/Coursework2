@@ -2,48 +2,47 @@ package com.example.trailblazer;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TestProviderActivity extends Activity {
     private TextView textView;
+    int metricType = 1;
+    int numberOfTimeframes = 7;
+    int timeframeType = 1;
+    double progress = 0.0;
+    double target = 100.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Simple layout with a TextView
-        textView = new TextView(this);
-        setContentView(textView);
-
-        // Query the provider for data
-        Uri tripURI = Uri.parse("content://" + Contract.AUTHORITY + "/trip_history");
-
+        setContentView(R.layout.test_provider_activity);
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
         executor.execute(() -> {
-            Cursor cursor = getContentResolver().query(tripURI, null, null, null, null);
-            handler.post(() -> {
-                if (cursor != null && cursor.moveToFirst()) {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    do {
-                        @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex("distance_traveled"));
-                        stringBuilder.append(name).append("\n");
-                    } while (cursor.moveToNext());
+            Uri tripURI = Uri.parse("content://" + Contract.AUTHORITY + "/goals");
+            ContentValues contentValues = new ContentValues();
+            contentValues.put("metric_type", metricType);
+            contentValues.put("number_of_timeframes", numberOfTimeframes);
+            contentValues.put("timeframe_type", timeframeType);
+            contentValues.put("progress", progress);
+            contentValues.put("target", target);
+            contentValues.put("date_created", Converters.dateToTimestamp(new Date()));
+            contentValues.put("is_complete", false);
 
-                    textView.setText(stringBuilder.toString());
-                    cursor.close();
-                } else {
-                    textView.setText("No data found.");
-                }
-            });
+            Uri insertedUri = getContentResolver().insert(tripURI, contentValues);
+            Log.d("OUT", String.valueOf(insertedUri));
         });
     }
 }

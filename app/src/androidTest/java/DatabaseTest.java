@@ -241,7 +241,7 @@ public class DatabaseTest {
         elevationData.add(250.0);
         elevationData.add(300.0);
         Trip trip = new Trip(new Date(), 1.0, Trip.MOVEMENT_RUN, 120, routePoints, elevationData, 25,Trip.WEATHER_FOGGY,"");
-        long tripID = tripDao.insertTrip(trip);
+        long tripID = tripDao.addNewTrip(trip);
         List<Trip> trips = tripDao.loadTripHistory();
         assertEquals(trips.get(0).getTripID(), tripID);
     }
@@ -254,7 +254,7 @@ public class DatabaseTest {
         elevationData.add(250.0);
         elevationData.add(300.0);
         Trip trip = new Trip(new Date(), 1.0, Trip.MOVEMENT_RUN, 120, routePoints, elevationData, 25,Trip.WEATHER_FOGGY,"");
-        tripDao.insertTrip(trip);
+        tripDao.addNewTrip(trip);
 
         tripDao.deleteTripHistory();
 
@@ -271,7 +271,7 @@ public class DatabaseTest {
         elevationData.add(250.0);
         elevationData.add(300.0);
         Trip trip = new Trip(new Date(), 1.0, Trip.MOVEMENT_RUN, 120, routePoints, elevationData, 25,Trip.WEATHER_FOGGY,"");
-        tripDao.insertTrip(trip);
+        tripDao.addNewTrip(trip);
 
         List<Trip> trips = tripDao.loadTripHistory();
         assertFalse(trips.isEmpty());

@@ -37,6 +37,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.14.2")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     testImplementation("junit:junit:4.12")
+    debugImplementation("androidx.fragment:fragment-testing:1.6.2")
     androidTestImplementation("junit:junit:4.13.2")
     annotationProcessor("com.github.bumptech.glide:compiler:4.14.2")
     implementation("androidx.appcompat:appcompat:1.6.1")

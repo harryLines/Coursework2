@@ -2,6 +2,7 @@ package com.example.trailblazer;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
@@ -105,6 +106,16 @@ public class Goal {
         this.target = target;
         this.dateCreated = dateCreated;
         this.isComplete = false;
+    }
+    @Ignore
+    public Goal(int metricType, int numberOfTimeframes, int timeframeType, double progress, double target, Date dateCreated, boolean isComplete) {
+        this.metricType = metricType;
+        this.numberOfTimeframes = numberOfTimeframes;
+        this.timeframeType = timeframeType;
+        this.progress = progress;
+        this.target = target;
+        this.dateCreated = dateCreated;
+        this.isComplete = isComplete;
     }
 
     public String getTargetWithUnitString() {
