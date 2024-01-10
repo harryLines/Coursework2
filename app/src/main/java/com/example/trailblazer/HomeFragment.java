@@ -31,6 +31,11 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * The HomeFragment class is responsible for displaying and managing user's home screen.
+ * It provides features like tracking walking, running, and cycling activities, displaying
+ * average speeds, and showing weekly graphs for distance and calories.
+ */
 public class HomeFragment extends Fragment {
     CheckBox checkboxWalking;
     CheckBox checkboxRunning;
@@ -53,6 +58,13 @@ public class HomeFragment extends Fragment {
     public HomeFragment() {
     }
 
+    /**
+     * Calculates the average speed for a given list of trips of a specific movement type.
+     *
+     * @param trips        The list of trips to calculate the average speed from.
+     * @param movementType The movement type for which to calculate the average speed.
+     * @return The calculated average speed.
+     */
     public double calculateAverageSpeed(List<Trip> trips, int movementType) {
         double totalSpeed = 0.0;
         int count = 0;
@@ -189,6 +201,12 @@ public class HomeFragment extends Fragment {
         return binding.getRoot();
     }
 
+    /**
+     * Retrieves a list of dates within the last week from the given list of trips.
+     *
+     * @param trips The list of trips to extract dates from.
+     * @return A list of dates within the last week.
+     */
     private List<Date> getDateListLastWeek(List<Trip> trips) {
         List<Date> dateListLastWeek = new ArrayList<>();
         HashSet<String> uniqueDates = new HashSet<>(); // Use a set to track unique dates
@@ -202,6 +220,11 @@ public class HomeFragment extends Fragment {
         return dateListLastWeek;
     }
 
+    /**
+     * Displays a toast message with the specified message.
+     *
+     * @param message The message to display in the toast.
+     */
     private void showToast(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
     }
@@ -216,6 +239,12 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    /**
+     * Filters the list of trips to include only those within the last week.
+     *
+     * @param trips The list of trips to filter.
+     * @return A list of trips within the last week.
+     */
     public List<Trip> filterTripsLastWeek(List<Trip> trips) {
         List<Trip> tripsLastWeek = new ArrayList<>();
         long oneWeekAgoMillis = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000); // 7 days in milliseconds
@@ -228,6 +257,12 @@ public class HomeFragment extends Fragment {
         return tripsLastWeek;
     }
 
+    /**
+     * Calculates the distance covered by trips for each day and stores the result in a map.
+     *
+     * @param walkingTrips The list of walking trips to calculate distances for.
+     * @return A map containing daily distances.
+     */
     public Map<String, Double> calculateDistanceByDay(List<Trip> walkingTrips) {
         Map<String, Double> walkingDistanceByDay = new TreeMap<>(); // TreeMap for sorting by day
 
@@ -242,6 +277,12 @@ public class HomeFragment extends Fragment {
         return walkingDistanceByDay;
     }
 
+    /**
+     * Converts a map of data to a list of floats.
+     *
+     * @param data The map of data to convert.
+     * @return A list of floats representing the data values.
+     */
     private List<Float> convertMapToList(Map<String, Double> data) {
         List<Float> dataList = new ArrayList<>();
         for (Map.Entry<String, Double> entry : data.entrySet()) {
@@ -250,11 +291,22 @@ public class HomeFragment extends Fragment {
         return dataList;
     }
 
+    /**
+     * Formats a date as a day string.
+     *
+     * @param date The date to format.
+     * @return A string representing the day portion of the date.
+     */
     private String getDayFromDate(Date date) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
         return sdf.format(date);
     }
 
+    /**
+     * Updates the graph and UI based on user selections and trip data.
+     *
+     * @throws ParseException If there is an issue parsing date data.
+     */
     private void updateGraph() throws ParseException {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
@@ -335,6 +387,12 @@ public class HomeFragment extends Fragment {
         });
     }
 
+    /**
+     * Converts a map of data to a list of integers.
+     *
+     * @param data The map of data to convert.
+     * @return A list of integers representing the data values.
+     */
     private List<Integer> convertMapToListInt(Map<String, Double> data) {
         List<Integer> dataList = new ArrayList<>();
         for (Map.Entry<String, Double> entry : data.entrySet()) {
@@ -343,7 +401,12 @@ public class HomeFragment extends Fragment {
         return dataList;
     }
 
-
+    /**
+     * Calculates the calories burned for each day based on trips and stores the result in a map.
+     *
+     * @param trips The list of trips to calculate calories for.
+     * @return A map containing daily calorie values.
+     */
     private Map<String, Double> calculateCaloriesByDay(List<Trip> trips) {
         Map<String, Double> caloriesByDay = new TreeMap<>();
 
@@ -354,7 +417,6 @@ public class HomeFragment extends Fragment {
             // Update the total calories for the day
             caloriesByDay.put(day, caloriesByDay.getOrDefault(day, 0.0) + calories);
         }
-
         return caloriesByDay;
     }
 

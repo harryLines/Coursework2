@@ -13,9 +13,16 @@ import java.util.List;
 public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder> {
     private final List<String> reminders;
 
+
+    /**
+     * Constructs a new ReminderAdapter with the provided list of reminders.
+     *
+     * @param reminders The list of reminders to display in the RecyclerView.
+     */
     public ReminderAdapter(List<String> reminders) {
         this.reminders = reminders;
     }
+
 
     @NonNull
     @Override
@@ -42,18 +49,33 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.Remind
 
         private final TextView txtReminder;
 
+        /**
+         * Constructs a new ReminderViewHolder with the provided itemView.
+         *
+         * @param itemView The view representing the reminder item.
+         */
         public ReminderViewHolder(@NonNull View itemView) {
             super(itemView);
             // Initialize your views from the reminder item layout
             txtReminder = itemView.findViewById(R.id.txtReminder);
         }
 
+        /**
+         * Binds the given reminder data to the views within the ViewHolder.
+         *
+         * @param reminder The reminder text to bind to the view.
+         */
         public void bind(String reminder) {
             // Bind the data to your views
             txtReminder.setText(reminder);
         }
     }
 
+    /**
+     * Sets a new list of reminders and updates the RecyclerView.
+     *
+     * @param newReminders The new list of reminders to display.
+     */
     public void setReminders(List<String> newReminders) {
         reminders.clear();
         reminders.addAll(newReminders);

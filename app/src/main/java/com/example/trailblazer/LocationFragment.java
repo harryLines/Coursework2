@@ -32,10 +32,15 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * The LocationFragment class manages the user's location-related activities and provides features
+ * for searching, saving, and displaying locations.
+ */
 public class LocationFragment extends Fragment {
 
     private AutoCompleteTextView autoCompleteTextView;
@@ -97,6 +102,9 @@ public class LocationFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Show a dialog for saving a new location with a custom name.
+     */
     private void showSaveLocationDialog() {
         // Create and customize a dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
@@ -132,6 +140,13 @@ public class LocationFragment extends Fragment {
         builder.create().show();
     }
 
+    /**
+     * Retrieves the latitude and longitude coordinates for a selected place using the Places API
+     * and saves the location with the provided name.
+     *
+     * @param placeName     The name of the selected place.
+     * @param locationName  The custom name for the saved location.
+     */
     private void getLatLngForLocation(String placeName, String locationName) {
         // Use the Places API to get details for the selected place
         AutocompleteSessionToken token = AutocompleteSessionToken.newInstance();
@@ -146,7 +161,7 @@ public class LocationFragment extends Fragment {
                 String placeId = prediction.getPlaceId();
 
                 // Use the Place Details API to get more information about the selected place
-                List<Place.Field> placeFields = Arrays.asList(Place.Field.LAT_LNG);
+                List<Place.Field> placeFields = Collections.singletonList(Place.Field.LAT_LNG);
                 FetchPlaceRequest fetchPlaceRequest = FetchPlaceRequest.builder(placeId, placeFields).build();
 
                 placesClient.fetchPlace(fetchPlaceRequest).addOnSuccessListener(fetchPlaceResponse -> {
@@ -188,6 +203,12 @@ public class LocationFragment extends Fragment {
         });
     }
 
+    /**
+     * Retrieves location suggestions based on user input using the Places API
+     * and updates the AutoCompleteTextView's adapter with the suggestions.
+     *
+     * @param query  The user's input query.
+     */
     private void getPlaceSuggestions(String query) {
         AutocompleteSessionToken token = AutocompleteSessionToken.newInstance();
 
@@ -218,7 +239,9 @@ public class LocationFragment extends Fragment {
         });
     }
 
-    // Implement SimpleTextWatcher as a helper class to simplify text change handling
+    /**
+     * A helper class that simplifies text change handling for the AutoCompleteTextView.
+     */
     abstract class SimpleTextWatcher implements TextWatcher {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {

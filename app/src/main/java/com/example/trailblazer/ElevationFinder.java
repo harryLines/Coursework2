@@ -14,18 +14,41 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
+/**
+ * The ElevationFinder class provides functionality to retrieve elevation data for a given latitude
+ * and longitude using the Google Maps Elevation API.
+ */
 public class ElevationFinder {
 
     private static final String BASE_URL = "https://maps.googleapis.com/maps/api/elevation/json";
     private static final String API_KEY = "AIzaSyCrKsxTguyZRaVlFrC9ADqGZbmLKyxctWs"; // Replace with your actual API key
 
+    /**
+     * Interface for receiving elevation data or error messages asynchronously.
+     */
     public interface ElevationCallback {
+        /**
+         * Called when the elevation data is successfully received.
+         *
+         * @param elevation The elevation value in meters.
+         */
         void onElevationReceived(double elevation);
 
+        /**
+         * Called when an error occurs while retrieving elevation data.
+         *
+         * @param errorMessage The error message describing the issue.
+         */
         void onError(String errorMessage);
     }
 
+    /**
+     * Retrieves elevation data for the specified latitude and longitude coordinates.
+     *
+     * @param latitude  The latitude coordinate.
+     * @param longitude The longitude coordinate.
+     * @param callback  The callback to handle the result or error.
+     */
     public static void getElevation(double latitude, double longitude, ElevationCallback callback) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -45,11 +68,19 @@ public class ElevationFinder {
         }
     }
 
-
+    /**
+     * A Callable implementation to retrieve elevation data from the Google Maps Elevation API.
+     */
     private static class ElevationCallable implements Callable<Double> {
         private final double latitude;
         private final double longitude;
 
+        /**
+         * Constructs an ElevationCallable with the specified latitude and longitude.
+         *
+         * @param latitude  The latitude coordinate.
+         * @param longitude The longitude coordinate.
+         */
         ElevationCallable(double latitude, double longitude) {
             this.latitude = latitude;
             this.longitude = longitude;
@@ -97,6 +128,12 @@ public class ElevationFinder {
         }
     }
 
+    /**
+     * Parses the elevation value from the JSON response received from the Google Maps Elevation API.
+     *
+     * @param jsonResponse The JSON response from the API.
+     * @return The elevation value in meters.
+     */
     private static double parseElevationFromJson(String jsonResponse) {
         try {
             JSONObject jsonObject = new JSONObject(jsonResponse);

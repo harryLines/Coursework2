@@ -24,7 +24,6 @@ public class SavedLocation {
     @Ignore
     private List<Reminder> reminders;
     private boolean entered;
-
     public SavedLocation(String name, LatLng latLng) {
         this.name = name;
         this.latLng = latLng;
@@ -35,7 +34,6 @@ public class SavedLocation {
     public void setName(String name) {
         this.name = name;
     }
-
     public void setLatLng(LatLng latLng) {
         this.latLng = latLng;
     }
@@ -48,31 +46,33 @@ public class SavedLocation {
     public boolean isEntered() {
         return entered;
     }
-
     public void setEntered(boolean entered) {
         this.entered = entered;
     }
-
     public String getName() {
         return name;
     }
-
     public LatLng getLatLng() {
         return latLng;
     }
-
     public List<Reminder> getReminders() {
         return reminders;
     }
-
     public void addReminder(Reminder reminder) {
         reminders.add(reminder);
     }
-
     public void setReminders(List<Reminder> reminders) {
         this.reminders = reminders;
     }
-
+    /**
+     * Retrieves the reminders as a comma-separated string.
+     * <p>
+     * This method iterates through the list of reminders and appends each reminder's text to a
+     * StringBuilder, separated by commas. The resulting string represents all reminders in the list
+     * as a single, comma-separated value.
+     *
+     * @return A comma-separated string containing the reminder texts, or an empty string if there are no reminders.
+     */
     public String getRemindersAsString() {
         StringBuilder remindersString = new StringBuilder();
         for (Reminder reminder : reminders) {

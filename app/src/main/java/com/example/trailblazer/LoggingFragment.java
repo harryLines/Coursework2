@@ -1,12 +1,8 @@
 package com.example.trailblazer;
 
-import static android.app.Activity.RESULT_OK;
-
-import android.app.Activity;
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
-import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -16,12 +12,9 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.MediaStore;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +22,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
@@ -39,23 +31,18 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.trailblazer.databinding.LoggingFragmentBinding;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,10 +50,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * A Fragment class responsible for logging walking, running, and cycling.
+ * It allows users to track their progress, progress in their goals, and capture photos during activities.
+ */
 public class LoggingFragment extends Fragment {
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
     RadioButton walkingRadioButton;
@@ -180,6 +170,9 @@ public class LoggingFragment extends Fragment {
         return binding.getRoot();
     }
 
+    /**
+     * Checks if the required camera permission is granted and takes a picture using the device's camera.
+     */
     private void checkCameraPermission() {
         // Check if camera permission is granted
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -191,11 +184,20 @@ public class LoggingFragment extends Fragment {
         }
     }
 
+    /**
+     * Launches the device's camera to capture an image.
+     */
     private void takePicture() {
         // Launch the camera to capture an image
         cameraLauncher.launch(null);
     }
 
+    /**
+     * Saves an image represented as a byte array to a file in the app's private directory.
+     *
+     * @param imageData The byte array representing the image data.
+     * @return The file path of the saved image.
+     */
     public String saveImageToFile(byte[] imageData) {
         // Get the directory for the app's private pictures directory.
         File directory = new File(getActivity().getFilesDir(), "images");
@@ -220,13 +222,22 @@ public class LoggingFragment extends Fragment {
         }
     }
 
+    /**
+     * Converts a Bitmap image to a byte array.
+     *
+     * @param bitmap The Bitmap image to be converted.
+     * @return The resulting byte array.
+     */
     public byte[] convertBitmapToByteArray(Bitmap bitmap) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
         return stream.toByteArray();
     }
 
-    // Method to start the service
+    /**
+     * Toggles the tracking service on or off based on the current tracking state.
+     * Starts or stops the MovementTrackerService.
+     */
     private void toggleService() {
         // Check if the service is already running
         if (isServiceRunning()) {
@@ -257,11 +268,19 @@ public class LoggingFragment extends Fragment {
         }
     }
 
+    /**
+     * Checks if the location permission is granted.
+     *
+     * @return True if the location permission is granted, false otherwise.
+     */
     private boolean checkLocationPermission() {
         return ActivityCompat.checkSelfPermission(
                 requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
+    /**
+     * Displays a dialog requesting location permissions.
+     */
     private void showLocationPermissionDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Location Permissions Required")
@@ -280,6 +299,9 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Displays a dialog informing the user that tracking has been stopped and provides summary information.
+     */
     private void showStopTrackingDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
         builder.setTitle("Tracking Stopped")
@@ -290,6 +312,15 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Updates the progress of fitness goals based on activity data.
+     *
+     * @param currentGoals      The list of current fitness goals.
+     * @param burnedCalories    The number of calories burned during the activity.
+     * @param distanceCovered   The distance covered during the activity.
+     * @param stepsTaken        The number of steps taken during the activity.
+     * @return The updated list of fitness goals.
+     */
     private List<Goal> updateProgress(List<Goal> currentGoals, double burnedCalories, double distanceCovered, int stepsTaken) {
         if (currentGoals != null) {
 
@@ -315,6 +346,10 @@ public class LoggingFragment extends Fragment {
         return currentGoals;
     }
 
+    /**
+     * Updates the stored fitness goals based on activity data.
+     * Called when tracking is stopped.
+     */
     private void updateGoals() {
         double burnedCalories = viewModel.getCalories().getValue();
         double distanceCovered = viewModel.getDistance().getValue(); // Assuming distance is the metric for kilometers goal
@@ -333,7 +368,11 @@ public class LoggingFragment extends Fragment {
         });
     }
 
-
+    /**
+     * Generates a summary message containing current activity values.
+     *
+     * @return A formatted string containing activity details.
+     */
     private String getCurrentValuesMessage() {
         String distance = "Distance: " + viewModel.getDistance().getValue() + " km\n";
         String duration = "Duration: " + formatTime(viewModel.getSeconds().getValue()) + "\n";
@@ -342,6 +381,12 @@ public class LoggingFragment extends Fragment {
         return distance + duration + steps + calories;
     }
 
+    /**
+     * Formats a time duration from seconds to HH:MM:SS format.
+     *
+     * @param seconds The time duration in seconds.
+     * @return The formatted time string.
+     */
     private String formatTime(long seconds) {
         long hours = seconds / 3600;
         long minutes = (seconds % 3600) / 60;
@@ -350,6 +395,9 @@ public class LoggingFragment extends Fragment {
         return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, remainingSeconds);
     }
 
+    /**
+     * Resets activity-related values and UI elements to their initial states.
+     */
     private void resetValues() {
         viewModel.setDistance(0.0);
         viewModel.setSeconds(0);
@@ -359,7 +407,11 @@ public class LoggingFragment extends Fragment {
         reminderAdapter.setReminders(new ArrayList<>());
         btnAddPhoto.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.button_design));    }
 
-    // Method to start the service
+    /**
+     * Starts the MovementTrackerService to track user activities based on the selected movement type.
+     *
+     * @return True if the service was successfully started, false if there was an issue or no movement type was selected.
+     */
     private boolean startService() {
         // Create an intent for your service
         Intent serviceIntent = new Intent(getActivity(), MovementTrackerService.class);
@@ -379,13 +431,19 @@ public class LoggingFragment extends Fragment {
         return true;
     }
 
-    // Method to stop the service
+    /**
+     * Stops the MovementTrackerService to halt activity tracking.
+     */
     private void stopService() {
         Intent serviceIntent = new Intent(getActivity(), MovementTrackerService.class);
         requireActivity().stopService(serviceIntent);
     }
 
-    // Method to check if a service is running
+    /**
+     * Checks whether the MovementTrackerService is currently running.
+     *
+     * @return True if the service is running, false otherwise.
+     */
     @SuppressWarnings("deprecation")
     private boolean isServiceRunning() {
         ActivityManager manager = (ActivityManager) requireActivity().getSystemService(Context.ACTIVITY_SERVICE);
@@ -397,6 +455,9 @@ public class LoggingFragment extends Fragment {
         return false;
     }
 
+    /**
+     * Displays an alert dialog to inform the user that a movement type must be selected for tracking.
+     */
     private void showMovementTypeAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Alert")
@@ -405,6 +466,10 @@ public class LoggingFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * BroadcastReceiver for receiving updates from the MovementTrackerService, such as activity data and location information.
+     * Updates the ViewModel and UI elements based on the received data.
+     */
     private final BroadcastReceiver movementUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -431,6 +496,10 @@ public class LoggingFragment extends Fragment {
         }
     };
 
+    /**
+     * Called when the fragment is resumed. Registers the movementUpdateReceiver BroadcastReceiver for receiving service updates
+     * and updates the UI elements accordingly.
+     */
     @Override
     public void onResume() {
         super.onResume();
@@ -440,6 +509,9 @@ public class LoggingFragment extends Fragment {
         requireActivity().registerReceiver(movementUpdateReceiver, filter);
     }
 
+    /**
+     * Called when the fragment is paused. Unregisters the movementUpdateReceiver BroadcastReceiver to stop receiving updates.
+     */
     @Override
     public void onPause() {
         super.onPause();

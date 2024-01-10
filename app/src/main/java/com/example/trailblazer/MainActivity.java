@@ -28,6 +28,13 @@ public class MainActivity extends AppCompatActivity {
     private int currentTabIndex = 0;
     ViewPager2 viewPager;
     TabLayout tabLayout;
+
+    /**
+     * Performs initialization tasks, such as setting the theme, initializing the layout,
+     * handling location permission, and configuring the ViewPager and TabLayout.
+     *
+     * @param savedInstanceState A Bundle containing the activity's previously saved state, if available.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -117,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Checks for and requests location permission if not granted.
+     */
     private void checkLocationPermission() {
         // Check for location permission
         if (ActivityCompat.checkSelfPermission(
@@ -130,6 +140,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Callback method invoked when permission request results are received.
+     *
+     * @param requestCode  The code that was specified when requesting permissions.
+     * @param permissions  The requested permissions.
+     * @param grantResults The results of the permission requests.
+     */
     @Override
     public void onRequestPermissionsResult(
             int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -145,6 +162,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Callback method invoked when a new intent is received by the activity.
+     *
+     * @param intent The new intent.
+     */
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -168,11 +190,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Callback method for creating the options menu.
+     *
+     * @param menu The options menu to be inflated.
+     * @return `true` if the menu was successfully inflated, `false` otherwise.
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
+
+    /**
+     * Callback method for handling menu item selection.
+     *
+     * @param item The selected menu item.
+     * @return `true` if the item's action was handled, `false` otherwise.
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -193,6 +228,9 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * ActivityResultLauncher for handling startActivityForResult results.
+     */
     private final ActivityResultLauncher<Intent> settingsLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {

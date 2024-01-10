@@ -1,5 +1,14 @@
 package com.example.trailblazer;
 
+import static com.example.trailblazer.ProgressCalculations.calculateAverageSpeed;
+import static com.example.trailblazer.ProgressCalculations.calculatePercentageChange;
+import static com.example.trailblazer.ProgressCalculations.calculateTotalDistance;
+import static com.example.trailblazer.ProgressCalculations.calculateTotalTime;
+import static com.example.trailblazer.ProgressCalculations.formatDistance;
+import static com.example.trailblazer.ProgressCalculations.formatSpeed;
+import static com.example.trailblazer.ProgressCalculations.formatTime;
+import static com.example.trailblazer.ProgressCalculations.formatTimeChange;
+
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +38,11 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * This class is responsible for displaying and updating user progress statistics
+ * based on different timeframes (1 Week, 1 Month, 3 Months, 6 Months). It loads trip history data
+ * from the database and calculates statistics for walking, running, and cycling.
+ */
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
     private String prevSelectedTimeframe = "1 Week";
@@ -37,6 +51,15 @@ public class ProgressFragment extends Fragment {
         tripHistory = new ArrayList<>();
     }
 
+    /**
+     * Called when the fragment's view is created. Initializes the UI components, sets up the Spinner
+     * for selecting timeframes, and registers listeners to handle timeframe changes.
+     *
+     * @param inflater           The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container          The parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState A Bundle containing the saved state of the fragment.
+     * @return The root view of the fragment.
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -86,10 +109,19 @@ public class ProgressFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Displays a Toast message with the specified message.
+     *
+     * @param message The message to be displayed in the Toast.
+     */
     private void showToast(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Called when the fragment is resumed. Loads trip history data from the database and updates
+     * the statistics based on the previously selected timeframe.
+     */
     @Override
     public void onResume() {
         super.onResume();
@@ -97,7 +129,11 @@ public class ProgressFragment extends Fragment {
         loadTripHistory();
     }
 
-
+    /**
+     * Updates statistics based on the selected timeframe and displays the results on the UI.
+     *
+     * @param selectedTimeframe The selected timeframe for which statistics are to be calculated.
+     */
     private void updateStatistics(String selectedTimeframe) {
         // Get the start date based on the selected timeframe
         Calendar calendar = Calendar.getInstance();
@@ -162,66 +198,19 @@ public class ProgressFragment extends Fragment {
         }
     }
 
-    // Helper methods to calculate total distance, speed, and time
-    public double calculateTotalDistance(List<Trip> trips, int movementType) {
-        double totalDistance = 0;
-        for (Trip trip : trips) {
-            if (trip.getMovementType() == movementType) {
-                totalDistance += trip.getDistance();
-            }
-        }
-        return totalDistance;
-    }
-
-    public double calculateAverageSpeed(List<Trip> trips, int movementType) {
-        double totalSpeed = 0;
-        int count = 0;
-
-        for (Trip trip : trips) {
-            if (trip.getMovementType() == movementType) {
-                // Convert meters to kilometers and seconds to hours
-                double distanceKm = trip.getDistance() / 1000.0; // Convert meters to kilometers
-                double timeHours = trip.getTimeInSeconds() / 3600.0; // Convert seconds to hours
-
-                // Calculate speed in km/h
-                double speedKmph = distanceKm / timeHours;
-
-                totalSpeed += speedKmph;
-                count++;
-            }
-        }
-
-        if (count > 0) {
-            return totalSpeed / count;
-        } else {
-            return 0;
-        }
-    }
-
-    public long calculateTotalTime(List<Trip> trips, int movementType) {
-        long totalTime = 0;
-        for (Trip trip : trips) {
-            if (trip.getMovementType() == movementType) {
-                totalTime += trip.getTimeInSeconds();
-            }
-        }
-        return totalTime;
-    }
-
-    // Helper method to calculate percentage change
-    public int calculatePercentageChange(double currentValue, double previousValue) {
-        if (previousValue != 0) {
-            double percentageChange = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
-            return (int) percentageChange;
-        } else {
-            return 0; // Handle division by zero or when there's no previous value
-        }
-    }
-
+    /**
+     * Updates the UI components with calculated statistics and percentage change.
+     *
+     * @param movementType        The movement type for which statistics are updated.
+     * @param totalDistance       The total distance traveled for the specified movement type.
+     * @param totalSpeed          The average speed for the specified movement type.
+     * @param totalTime           The total time spent for the specified movement type.
+     * @param percentChangeDistance Percentage change in total distance.
+     * @param percentChangeSpeed    Percentage change in average speed.
+     * @param percentChangeTime     Percentage change in total time.
+     */
     private void updateUI(int movementType, double totalDistance, double totalSpeed, long totalTime,
                           int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
-
-        String movementTypeName = getMovementTypeName(movementType);
 
         // Update the UI based on the movement type
         switch (movementType) {
@@ -337,6 +326,12 @@ public class ProgressFragment extends Fragment {
         updateSingleTextViewColour(percentChangeTime, textViewCyclingTimeId);
     }
 
+    /**
+     * Updates the text color of a TextView based on the provided percentage change value.
+     *
+     * @param percentChange The percentage change value to determine the text color.
+     * @param textViewid    The resource ID of the TextView to update.
+     */
     private void updateSingleTextViewColour(int percentChange, int textViewid) {
         TextView textView = requireView().findViewById(textViewid);
         int color;
@@ -356,6 +351,12 @@ public class ProgressFragment extends Fragment {
         textView.setTextColor(color);
     }
 
+    /**
+     * Updates the background color of a CardView based on the percentage change.
+     *
+     * @param percentChange   The percentage change to determine the background color.
+     * @param cardViewId      The resource ID of the CardView to update.
+     */
     private void updateSingleCardViewBackground(int percentChange, int cardViewId) {
         View cardView = requireView().findViewById(cardViewId);
 
@@ -388,8 +389,6 @@ public class ProgressFragment extends Fragment {
         cardView.setBackground(gradientDrawable);
     }
 
-
-
     private String getMovementTypeName(int movementType) {
         // Map movement type to a human-readable name
         switch (movementType) {
@@ -404,8 +403,10 @@ public class ProgressFragment extends Fragment {
         }
     }
 
+    /**
+     * Loads trip history from the database and updates statistics for the previously selected timeframe.
+     */
     private void loadTripHistory() {
-
         // Load trip history from the database
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
@@ -419,6 +420,16 @@ public class ProgressFragment extends Fragment {
         });
     }
 
+    /**
+     * Updates statistics and UI components specific to the "Walking" movement type.
+     *
+     * @param totalDistance       The total distance traveled while walking.
+     * @param totalSpeed          The average speed while walking.
+     * @param totalTime           The total time spent walking.
+     * @param percentChangeDistance Percentage change in total walking distance.
+     * @param percentChangeSpeed    Percentage change in average walking speed.
+     * @param percentChangeTime     Percentage change in total walking time.
+     */
     private void updateWalkingStats(double totalDistance, double totalSpeed, long totalTime,
                                     int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
         TextView textViewWalkingDistanceValue = requireView().findViewById(R.id.textViewWalkingDistanceValue);
@@ -439,6 +450,17 @@ public class ProgressFragment extends Fragment {
         TextView textViewWalkingTimeChange = getView().findViewById(R.id.textViewWalkingTimeChange);
         textViewWalkingTimeChange.setText(formatTimeChange(percentChangeTime));
     }
+
+    /**
+     * Updates statistics and UI components specific to the "Running" movement type.
+     *
+     * @param totalDistance       The total distance traveled while running.
+     * @param totalSpeed          The average speed while running.
+     * @param totalTime           The total time spent running.
+     * @param percentChangeDistance Percentage change in total running distance.
+     * @param percentChangeSpeed    Percentage change in average running speed.
+     * @param percentChangeTime     Percentage change in total running time.
+     */
     private void updateRunningStats(double totalDistance, double totalSpeed, long totalTime,
                                     int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
         TextView textViewRunningDistanceValue = requireView().findViewById(R.id.textViewRunningDistanceValue);
@@ -460,6 +482,16 @@ public class ProgressFragment extends Fragment {
         textViewRunningTimeChange.setText(formatTimeChange(percentChangeTime));
     }
 
+    /**
+     * Updates statistics and UI components specific to the "Cycling" movement type.
+     *
+     * @param totalDistance       The total distance traveled while cycling.
+     * @param totalSpeed          The average speed while cycling.
+     * @param totalTime           The total time spent cycling.
+     * @param percentChangeDistance Percentage change in total cycling distance.
+     * @param percentChangeSpeed    Percentage change in average cycling speed.
+     * @param percentChangeTime     Percentage change in total cycling time.
+     */
     private void updateCyclingStats(double totalDistance, double totalSpeed, long totalTime,
                                     int percentChangeDistance, int percentChangeSpeed, int percentChangeTime) {
         TextView textViewCyclingDistanceValue = requireView().findViewById(R.id.textViewCyclingDistanceValue);
@@ -479,35 +511,5 @@ public class ProgressFragment extends Fragment {
 
         TextView textViewCyclingTimeChange = getView().findViewById(R.id.textViewCyclingTimeChange);
         textViewCyclingTimeChange.setText(formatTimeChange(percentChangeTime));
-    }
-
-    public String formatDistance(double distance) {
-        // Format distance with 2 decimal points and append " km"
-        return String.format(Locale.getDefault(), "%.2f km", distance/1000);
-    }
-
-    public String formatSpeed(double speed) {
-        // Format speed to one decimal place and append " m/s"
-        return String.format(Locale.getDefault(), "%.1f km/h", speed);
-    }
-
-    public String formatTime(long timeInSeconds) {
-        // Format time in hours, minutes, and seconds
-        long hours = timeInSeconds / 3600;
-        long minutes = (timeInSeconds % 3600) / 60;
-        long seconds = timeInSeconds % 60;
-
-        if (hours > 0) {
-            return String.format(Locale.getDefault(), "%dh %02dm", hours, minutes);
-        } else if (minutes > 0) {
-            return String.format(Locale.getDefault(), "%dm %02ds", minutes, seconds);
-        } else {
-            return String.format(Locale.getDefault(), "%ds", seconds);
-        }
-    }
-
-    public String formatTimeChange(int percentChangeTime) {
-        // Format time change percentage with a sign
-        return String.format(Locale.getDefault(), "%s%d%%", (percentChangeTime >= 0) ? "+" : "", percentChangeTime);
     }
 }

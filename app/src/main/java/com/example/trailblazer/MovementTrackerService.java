@@ -66,10 +66,13 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private Database database;
     private TripDao tripDao;
     private SavedLocationDao savedLocationDao;
-    private boolean notificationCurrentlyNull;
     private static int currentWeather = -1;
     private static String currentImage;
 
+    /**
+     * Called when the service is first created. Initializes sensor management, step detection,
+     * location updates, and other required variables.
+     */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -90,7 +93,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         if (accelerometerSensor == null) {
             // Handle the case when the accelerometer sensor is not available on this device
             Log.e(TAG, "Accelerometer sensor is not available on this device");
-            // You may stop the service or handle it according to your needs
             stopSelf();
             return;
         }
@@ -127,7 +129,15 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         currentWeather = weather;
     }
 
-    // MET calculation based on (https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html)
+    /**
+     * Calculates the calories burned based on the Metabolic Equivalent of Task (MET) formula,
+     * taking into account the movement type, speed, and elapsed time.
+     *
+     * MET calculation based on the research article:
+     * {https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html}
+     *
+     * @return The estimated calories burned as an integer value.
+     */
     private int calculateCaloriesBurned() {
         double MET;
         double elapsedTimeInHours = (double) elapsedMillis / 3600000;
@@ -177,6 +187,12 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         };
     }
 
+    /**
+     * Callback method invoked when a step is detected by the step detector. Broadcasts the updated
+     * step count to inform the application about step-related changes.
+     *
+     * @param stepCount The number of steps detected.
+     */
     @Override
     public void onStepDetected(int stepCount) {
         // Broadcast the updated step count if needed
@@ -185,6 +201,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         sendBroadcast(intent);
     }
 
+    /**
+     * Updates the elapsed time during tracking and broadcasts the updated tracking duration if needed.
+     */
     private void updateTimer() {
         elapsedMillis = System.currentTimeMillis() - startTimeMillis;
         long seconds = elapsedMillis / 1000;
@@ -195,6 +214,15 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         sendBroadcast(intent);
     }
 
+    /**
+     * Called when the service is started with an intent. Initializes tracking parameters, starts
+     * location updates, and creates a foreground notification.
+     *
+     * @param intent  The intent used to start the service.
+     * @param flags   Additional data about this start request.
+     * @param startId A unique integer representing this specific request to start.
+     * @return An integer representing how the service should continue running.
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
@@ -216,6 +244,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         return START_STICKY;
     }
 
+    /**
+     * Called when the service is destroyed. Stops the foreground service, location updates, and
+     * step detection. Saves the trip data to the database.
+     */
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -227,6 +259,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         currentImage = null;
     }
 
+    /**
+     * Saves the trip data to the local database, including distance, duration, route points, elevation,
+     * calories burned, weather, and image information.
+     */
     private void saveTripToDatabase() {
         // Create a new Trip instance with the required data
         Trip trip = new Trip(
@@ -244,6 +280,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         });
     }
 
+    /**
+     * Initializes location updates, including the location client and location callback.
+     */
     private void initLocationUpdates() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -263,6 +302,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         };
     }
 
+    /**
+     * Starts location updates if location permission is granted. Sets the update interval for
+     * receiving location updates.
+     */
     private void startLocationUpdates() {
         // Check for location permission
         if (ActivityCompat.checkSelfPermission(
@@ -278,10 +321,19 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         }
     }
 
+    /**
+     * Stops location updates.
+     */
     private void stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback);
     }
 
+    /**
+     * Calculates and updates the total distance traveled, checks for elevation data updates,
+     * and broadcasts movement updates.
+     *
+     * @param newLocation The new Location object representing the current location.
+     */
     private void calculateDistance(Location newLocation) {
         if (lastLocation != null) {
             double distance = calculateHaversineDistance(
@@ -310,13 +362,28 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         }
     }
 
+    /**
+     * Retrieves and adds elevation data for a given location using the ElevationFinder utility class.
+     *
+     * @param location The Location object for which elevation data needs to be obtained.
+     */
     private void addElevationForLocation(Location location) {
-        ElevationFinder.getElevation(location.getLatitude(), location.getLatitude(), new ElevationFinder.ElevationCallback() {
+        ElevationFinder.getElevation(location.getLatitude(), location.getLongitude(), new ElevationFinder.ElevationCallback() {
+            /**
+             * Callback method invoked when elevation data is successfully received.
+             *
+             * @param elevation The elevation data (in meters) for the provided location.
+             */
             @Override
             public void onElevationReceived(double elevation) {
                 elevationData.add(elevation);
             }
 
+            /**
+             * Callback method invoked when an error occurs while retrieving elevation data.
+             *
+             * @param errorMessage A message describing the error that occurred.
+             */
             @Override
             public void onError(String errorMessage) {
                 // Handle the error here
@@ -325,7 +392,15 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         });
     }
 
-    // Use a formula to calculate distance instead of outsourcing to an API to ensure speed and reliability
+    /**
+     * Calculates the distance between two locations using the Haversine formula.
+     *
+     * @param startLat Starting latitude.
+     * @param startLng Starting longitude.
+     * @param endLat   Ending latitude.
+     * @param endLng   Ending longitude.
+     * @return The calculated distance in meters.
+     */
     private double calculateHaversineDistance(double startLat, double startLng, double endLat, double endLng) {
         double R = 6371;
 
@@ -346,6 +421,13 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    /**
+     * Sends a broadcast with movement-related data, including distance, saved location name, tracking
+     * duration, step count, and calories burned.
+     *
+     * @param distance        The total distance traveled.
+     * @param currentLocation The current location of the user.
+     */
     private void sendMovementUpdateBroadcast(double distance, Location currentLocation) {
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
 
@@ -393,6 +475,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         sendBroadcast(intent);
     }
 
+    /**
+     * Updates the notification based on the current saved location name and other trip information.
+     */
     private void updateNotification() {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -401,7 +486,11 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         notificationManager.notify(NOTIFICATION_ID, buildNotification());
     }
 
-
+    /**
+     * Loads saved locations from the database and initializes the savedLocations list.
+     *
+     * @return A list of SavedLocation objects loaded from the database.
+     */
     private List<SavedLocation> loadSavedLocations() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -415,6 +504,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         return savedLocations;
     }
 
+    /**
+     * Creates a notification channel for displaying notifications related to the Movement Tracker.
+     */
     private void createNotificationChannel() {
         CharSequence name = "Movement Tracker Channel";
         String description = "Channel for Movement Tracker notifications";
@@ -428,6 +520,11 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         }
     }
 
+    /**
+     * Builds and returns a notification for the foreground service.
+     *
+     * @return A NotificationCompat.Builder instance representing the foreground notification.
+     */
     private Notification buildNotification() {
         // Create an intent for the notification
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -455,7 +552,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         if("NULL".equals(savedLocationName)) {
             notificationBuilder.setContentText("Your trip is being tracked");
         }
-
         return notificationBuilder.build();
     }
 }

@@ -18,14 +18,30 @@ import java.util.concurrent.Executors;
 public class RemindersEditAdapter extends RecyclerView.Adapter<RemindersEditAdapter.ReminderViewHolder> {
     private List<Reminder> reminders;
 
+    /**
+     * Constructs a new RemindersEditAdapter with the provided list of reminders.
+     *
+     * @param reminders The list of reminders to display and edit in the RecyclerView.
+     */
     public RemindersEditAdapter(List<Reminder> reminders) {
         this.reminders = reminders;
     }
 
+    /**
+     * Sets a new list of reminders and updates the RecyclerView.
+     *
+     * @param reminders The new list of reminders to display and edit.
+     */
     public void setReminders(List<Reminder> reminders) {
         this.reminders = reminders;
         notifyDataSetChanged();
     }
+
+    /**
+     * Sets the location ID for reminders.
+     *
+     * @param id The location ID to associate with reminders.
+     */
     public void setLocationID(long id) {
         notifyDataSetChanged();
     }
@@ -48,6 +64,12 @@ public class RemindersEditAdapter extends RecyclerView.Adapter<RemindersEditAdap
         return reminders.size();
     }
 
+    /**
+     * Removes a reminder item at the specified position.
+     *
+     * @param position The position of the reminder item to remove.
+     * @return The removed Reminder object.
+     */
     public Reminder removeItem(int position) {
         // Remove the item from the list
         Reminder reminder = reminders.get(position);
@@ -58,9 +80,18 @@ public class RemindersEditAdapter extends RecyclerView.Adapter<RemindersEditAdap
         return reminder;
     }
 
+    /**
+     * ViewHolder class responsible for holding references to the reminder item views for editing.
+     */
     public static class ReminderViewHolder extends RecyclerView.ViewHolder {
         private final TextView textViewReminder;
 
+        /**
+         * Constructs a new ReminderViewHolder with the provided itemView and adapter.
+         *
+         * @param itemView The view representing the reminder item.
+         * @param adapter  The RemindersEditAdapter to handle item removal.
+         */
         public ReminderViewHolder(@NonNull View itemView, RemindersEditAdapter adapter) {
             super(itemView);
             textViewReminder = itemView.findViewById(R.id.textViewReminder);
@@ -74,18 +105,18 @@ public class RemindersEditAdapter extends RecyclerView.Adapter<RemindersEditAdap
                     Database database = DatabaseManager.getInstance(itemView.getContext());
 
                     ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Handler handler = new Handler(Looper.getMainLooper());
                     executor.execute(() -> {
                         database.reminderDao().removeReminder(reminder.getId());
-                        //Background work here
-                        handler.post(() -> {
-                            //UI Thread work here
-                        });
                     });
                 }
             });
         }
 
+        /**
+         * Binds the given reminder data to the views within the ViewHolder.
+         *
+         * @param reminder The reminder text to bind to the view.
+         */
         public void bind(String reminder) {
             textViewReminder.setText(reminder);
         }

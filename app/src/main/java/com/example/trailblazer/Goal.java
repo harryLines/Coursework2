@@ -6,12 +6,14 @@ import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-
+/**
+ * The Goal class represents a goal in the TrailBlazer app, which includes attributes such as
+ * metric type, number of timeframes, progress, target, and due date.
+ */
 @Entity(tableName = "goals")
 @TypeConverters({Converters.class})
 public class Goal {
@@ -56,6 +58,11 @@ public class Goal {
         isComplete = true;
     }
 
+    /**
+     * Gets a formatted string representing the due date of the goal.
+     *
+     * @return A formatted string indicating the due date or "Expired" if it has expired.
+     */
     public String getFormattedDueDate() {
         Date dueDate = getDueDate();
         Date currentDate = new Date(); // current date
@@ -75,6 +82,11 @@ public class Goal {
         }
     }
 
+    /**
+     * Calculates and returns the due date for the goal based on its attributes.
+     *
+     * @return The calculated due date.
+     */
     public Date getDueDate() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(dateCreated);
@@ -98,6 +110,16 @@ public class Goal {
     public int getMetricType() {
         return metricType;
     }
+    /**
+     * Constructs a Goal object with the specified attributes.
+     *
+     * @param metricType        The type of metric (e.g., calories, kilometers, steps).
+     * @param numberOfTimeframes The number of timeframes for the goal.
+     * @param timeframeType     The type of timeframe (e.g., day, week, month).
+     * @param progress          The current progress towards the goal.
+     * @param target            The target value for the goal.
+     * @param dateCreated       The date when the goal was created.
+     */
     public Goal(int metricType, int numberOfTimeframes, int timeframeType, double progress, double target, Date dateCreated) {
         this.metricType = metricType;
         this.numberOfTimeframes = numberOfTimeframes;
@@ -107,6 +129,17 @@ public class Goal {
         this.dateCreated = dateCreated;
         this.isComplete = false;
     }
+    /**
+     * Constructs a Goal object with the specified attributes, including completion status.
+     *
+     * @param metricType        The type of metric (e.g., calories, kilometers, steps).
+     * @param numberOfTimeframes The number of timeframes for the goal.
+     * @param timeframeType     The type of timeframe (e.g., day, week, month).
+     * @param progress          The current progress towards the goal.
+     * @param target            The target value for the goal.
+     * @param dateCreated       The date when the goal was created.
+     * @param isComplete        A boolean indicating whether the goal is complete.
+     */
     @Ignore
     public Goal(int metricType, int numberOfTimeframes, int timeframeType, double progress, double target, Date dateCreated, boolean isComplete) {
         this.metricType = metricType;
@@ -118,6 +151,11 @@ public class Goal {
         this.isComplete = isComplete;
     }
 
+    /**
+     * Gets a string representation of the target value with units added.
+     *
+     * @return A formatted string with the target value and its associated unit.
+     */
     public String getTargetWithUnitString() {
         String unit;
         String formatSpecifier;
@@ -143,6 +181,11 @@ public class Goal {
         return String.format(formatSpecifier, target, unit);
     }
 
+    /**
+     * Gets the metric type as a text description.
+     *
+     * @return The metric type description (e.g., "Calories," "Kilometers," "Steps").
+     */
     public String getMetricTypeAsText() {
         switch (metricType) {
             case METRIC_CALORIES:
@@ -172,6 +215,11 @@ public class Goal {
         return (int) progress;
     }
 
+    /**
+     * Gets the progress towards the goal as a percentage string.
+     *
+     * @return The progress as a percentage string (e.g., "50%").
+     */
     public String getProgressAsPercentageString() {
         return String.format(Locale.getDefault(), "%.0f%%", (progress / target) * 100);
     }
