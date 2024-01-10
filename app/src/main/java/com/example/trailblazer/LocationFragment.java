@@ -1,5 +1,6 @@
 package com.example.trailblazer;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,7 +32,6 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 import com.google.android.libraries.places.api.net.PlacesClient;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -46,61 +46,53 @@ public class LocationFragment extends Fragment {
     private AutoCompleteTextView autoCompleteTextView;
     private SavedLocationsAdapter savedLocationsAdapter;
     private List<SavedLocation> savedLocations;
+    SavedLocationRepository savedLocationRepository;
     private PlacesClient placesClient;
-    private Database database;
     View view;
     public LocationFragment() {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.location_fragment, container, false);
-
-        database = DatabaseManager.getInstance(requireContext());
-
         autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
         RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
 
+        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(requireContext()).savedLocationDao());
+
         // Initialize RecyclerView and adapter
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
+        recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        executor.execute(() -> {
-            // Load saved locations from the database
-            savedLocations = database.savedLocationDao().loadSavedLocations();
-            savedLocationsAdapter = new SavedLocationsAdapter(savedLocations,getContext());
-            recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
+        // Observe LiveData from the repository
+        savedLocationRepository.loadSavedLocations().observe(getViewLifecycleOwner(), savedLocations -> {
+            // Update the UI when the data changes
+            savedLocationsAdapter = new SavedLocationsAdapter(savedLocations, getContext(),getViewLifecycleOwner());
             recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
-            //Background work here
-            handler.post(() -> {
-                autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
-
-                // Initialize the Places API
-                Places.initialize(requireContext(), getString(R.string.google_maps_api_key));
-                placesClient = Places.createClient(requireContext());
-
-                // Set up adapter for location suggestions
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
-                autoCompleteTextView.setAdapter(adapter);
-
-                // Set up listener for text changes to get location suggestions
-                autoCompleteTextView.addTextChangedListener(new SimpleTextWatcher() {
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        // Fetch location suggestions based on the current text in autoCompleteTextView
-                        getPlaceSuggestions(s.toString());
-                    }
-                });
-                Button btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
-                btnSaveLocation.setOnClickListener(v -> {
-                    showSaveLocationDialog();
-                });
-            });
         });
+
+        // Initialize the Places API
+        Places.initialize(requireContext(), getString(R.string.google_maps_api_key));
+        placesClient = Places.createClient(requireContext());
+
+        // Set up adapter for location suggestions
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line);
+        autoCompleteTextView.setAdapter(adapter);
+
+        // Set up listener for text changes to get location suggestions
+        autoCompleteTextView.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Fetch location suggestions based on the current text in autoCompleteTextView
+                getPlaceSuggestions(s.toString());
+            }
+        });
+
+        Button btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
+        btnSaveLocation.setOnClickListener(v -> showSaveLocationDialog());
 
         return view;
     }
+
 
     /**
      * Show a dialog for saving a new location with a custom name.
@@ -132,9 +124,7 @@ public class LocationFragment extends Fragment {
 
 
         // Set up the negative button (Cancel)
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
-            dialog.dismiss();
-        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
 
         // Show the dialog
         builder.create().show();
@@ -147,6 +137,7 @@ public class LocationFragment extends Fragment {
      * @param placeName     The name of the selected place.
      * @param locationName  The custom name for the saved location.
      */
+    @SuppressLint("NotifyDataSetChanged")
     private void getLatLngForLocation(String placeName, String locationName) {
         // Use the Places API to get details for the selected place
         AutocompleteSessionToken token = AutocompleteSessionToken.newInstance();
@@ -172,19 +163,18 @@ public class LocationFragment extends Fragment {
                     assert selectedLatLng != null;
                     // Create a new SavedLocation instance with the locationId
                     SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng);
-                    ExecutorService executor = Executors.newSingleThreadExecutor();
-                    Handler handler = new Handler(Looper.getMainLooper());
+                    savedLocationRepository.addNewLocation(newLocation,null);
 
-                    executor.execute(() -> {
-                        long locationId = database.savedLocationDao().addNewLocation(newLocation);
-                        // Update the savedLocations list with the new data
-                        newLocation.setLocationID(locationId);
-                        savedLocations.add(newLocation);
-                        //Background work here
-                        handler.post(() -> {
+                    savedLocationRepository.loadSavedLocations().observe(getViewLifecycleOwner(), savedLocations -> {
+                        // Update the UI when the data changes
+                        if (savedLocationsAdapter == null) {
+                            savedLocationsAdapter = new SavedLocationsAdapter(savedLocations, getContext(),getViewLifecycleOwner());
                             RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
+                            recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
+                            recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
+                        } else {
                             savedLocationsAdapter.notifyDataSetChanged(); // Notify adapter of dataset change
-                        });
+                        }
                     });
                 }).addOnFailureListener(exception -> {
                     if (exception instanceof ApiException) {
@@ -242,7 +232,7 @@ public class LocationFragment extends Fragment {
     /**
      * A helper class that simplifies text change handling for the AutoCompleteTextView.
      */
-    abstract class SimpleTextWatcher implements TextWatcher {
+    abstract static class SimpleTextWatcher implements TextWatcher {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 

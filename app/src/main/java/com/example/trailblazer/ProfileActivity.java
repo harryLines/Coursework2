@@ -15,7 +15,6 @@ import androidx.appcompat.app.AppCompatActivity;
  * including their name and weight. Users can make changes and save them to SharedPreferences.
  */
 public class ProfileActivity extends AppCompatActivity {
-
     private EditText editTextName;
     private EditText editTextWeight;
     private SharedPreferences sharedPreferences;

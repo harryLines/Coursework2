@@ -27,6 +27,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 import java.util.Date;
@@ -63,11 +64,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private List<Double> elevationData;
     private long lastLocationPointTime;
     private long lastElevationDataTime;
-    private Database database;
-    private TripDao tripDao;
-    private SavedLocationDao savedLocationDao;
     private static int currentWeather = -1;
     private static String currentImage;
+    TripRepository tripRepository;
+    SavedLocationRepository savedLocationRepository;
 
     /**
      * Called when the service is first created. Initializes sensor management, step detection,
@@ -76,8 +76,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     @Override
     public void onCreate() {
         super.onCreate();
-
-        database = DatabaseManager.getInstance(getApplicationContext());
 
         // Initialize sensorManager
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -104,7 +102,9 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         sensorManager.registerListener(stepDetector, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
         initLocationUpdates();
-        savedLocations = loadSavedLocations();
+        tripRepository = new TripRepository(DatabaseManager.getInstance(getApplicationContext()).tripDao());
+        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(getApplicationContext()).savedLocationDao());
+        loadSavedLocations();
 
         startTimeMillis = System.currentTimeMillis();
         timerHandler = new Handler(Looper.getMainLooper());
@@ -132,7 +132,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     /**
      * Calculates the calories burned based on the Metabolic Equivalent of Task (MET) formula,
      * taking into account the movement type, speed, and elapsed time.
-     *
+     * <p>
      * MET calculation based on the research article:
      * {https://www.omicsonline.org/articles-images/2157-7595-6-220-t003.html}
      *
@@ -272,13 +272,10 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 elapsedMillis / 1000,
                 routePoints, elevationData, caloriesBurned, currentWeather, currentImage);
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        executor.execute(() -> {
-            tripDao = database.tripDao();
-            tripDao.addNewTrip(trip);
-        });
+        // Use the repository to add a new trip
+        tripRepository.addNewTrip(trip,null);
     }
+
 
     /**
      * Initializes location updates, including the location client and location callback.
@@ -310,9 +307,11 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // Check for location permission
         if (ActivityCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setInterval(1000); // Update interval in milliseconds
-            locationRequest.setFastestInterval(1000); // Fastest update interval
+
+            LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                    .setWaitForAccurateLocation(false)
+                    .setMinUpdateIntervalMillis(5000)
+                    .build();
 
             fusedLocationClient.requestLocationUpdates(
                     locationRequest, locationCallback, null);
@@ -432,37 +431,38 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
 
         boolean locationNameChanged = false;
-
-        for (SavedLocation savedLocation : savedLocations) {
-            double savedLat = savedLocation.getLatLng().latitude;
-            double savedLng = savedLocation.getLatLng().longitude;
-            double distanceToSavedLocation = calculateHaversineDistance(
-                    currentLocation.getLatitude(), currentLocation.getLongitude(),
-                    savedLat, savedLng);
-            // Check proximity
-            if (distanceToSavedLocation < 100) {
-                if (!savedLocation.isEntered()) {
-                    savedLocationName = savedLocation.getName();
-                    savedLocation.setEntered(true);
-                    locationNameChanged = true;
-                    // Set intent extras
-                    foundCloseLocation = true;
-                    break;
+        if(savedLocations != null) {
+            for (SavedLocation savedLocation : savedLocations) {
+                double savedLat = savedLocation.getLatLng().latitude;
+                double savedLng = savedLocation.getLatLng().longitude;
+                double distanceToSavedLocation = calculateHaversineDistance(
+                        currentLocation.getLatitude(), currentLocation.getLongitude(),
+                        savedLat, savedLng);
+                // Check proximity
+                if (distanceToSavedLocation < 100) {
+                    if (!savedLocation.isEntered()) {
+                        savedLocationName = savedLocation.getName();
+                        savedLocation.setEntered(true);
+                        locationNameChanged = true;
+                        // Set intent extras
+                        foundCloseLocation = true;
+                        break;
+                    }
+                    intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
+                } else {
+                    foundCloseLocation = false;
                 }
-                intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
-            } else {
-                foundCloseLocation = false;
             }
-        }
 
-        if (!foundCloseLocation) {
-            savedLocationName = "NULL";
-        }
+            if (!foundCloseLocation) {
+                savedLocationName = "NULL";
+            }
 
-        if (!savedLocationName.equals(previousSavedLocationName) || locationNameChanged) {
-            // Update the notification only if the savedLocationName has changed or if it was just set
-            updateNotification();
-            previousSavedLocationName = savedLocationName;
+            if (!savedLocationName.equals(previousSavedLocationName) || locationNameChanged) {
+                // Update the notification only if the savedLocationName has changed or if it was just set
+                updateNotification();
+                previousSavedLocationName = savedLocationName;
+            }
         }
 
         // Set intent extras with the final savedLocationName value
@@ -491,17 +491,12 @@ public class MovementTrackerService extends Service implements StepDetector.Step
      *
      * @return A list of SavedLocation objects loaded from the database.
      */
-    private List<SavedLocation> loadSavedLocations() {
+    private void loadSavedLocations() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-
         executor.execute(() -> {
-            savedLocationDao = database.savedLocationDao();
-            // Load saved locations from the database
-            savedLocations = savedLocationDao.loadSavedLocations();
+            // Assuming you have a method in your repository to get saved locations synchronously
+            savedLocations = savedLocationRepository.loadSavedLocations().getValue();
         });
-
-        // Close the database connection
-        return savedLocations;
     }
 
     /**

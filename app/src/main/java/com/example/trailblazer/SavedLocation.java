@@ -1,6 +1,5 @@
 package com.example.trailblazer;
 
-import androidx.databinding.adapters.Converters;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Ignore;

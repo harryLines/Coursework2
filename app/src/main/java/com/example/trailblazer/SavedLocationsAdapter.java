@@ -12,9 +12,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LiveData;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,7 +25,9 @@ import java.util.concurrent.Executors;
 public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAdapter.ViewHolder> {
     private final List<SavedLocation> savedLocations;
     private final Context context;
-    private Database database;
+    private final LifecycleOwner lifecycleOwner;
+    private SavedLocationRepository savedLocationRepository;
+    private ReminderRepository reminderRepository;
 
     /**
      * Constructs a SavedLocationsAdapter with the given list of saved locations and context.
@@ -30,10 +35,12 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
      * @param savedLocations The list of saved locations to be displayed.
      * @param context        The context associated with the adapter.
      */
-    public SavedLocationsAdapter(List<SavedLocation> savedLocations, Context context) {
+    public SavedLocationsAdapter(List<SavedLocation> savedLocations, Context context, LifecycleOwner lifecycleOwner) {
         this.savedLocations = savedLocations;
         this.context = context;
-        database = DatabaseManager.getInstance(context);
+        this.lifecycleOwner = lifecycleOwner;
+        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(context).savedLocationDao());
+        reminderRepository = new ReminderRepository(DatabaseManager.getInstance(context).reminderDao());
     }
 
     /**
@@ -47,6 +54,8 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_saved_location, parent, false);
+        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(context).savedLocationDao());
+        reminderRepository = new ReminderRepository(DatabaseManager.getInstance(context).reminderDao());
         return new ViewHolder(view);
     }
 
@@ -85,16 +94,13 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
         EditText editTextNewReminder = dialogView.findViewById(R.id.editTextNewReminder);
         Button btnAddReminder = dialogView.findViewById(R.id.btnAddReminder);
 
-        // Create and set up the reminders adapter
-        RemindersEditAdapter remindersAdapter = setUpRemindersAdapter(savedLocation, recyclerViewReminders);
+        setUpRemindersAdapter(savedLocation,recyclerViewReminders);
 
         // Set up the 'Add Reminder' button click listener
-        setUpAddReminderButton(savedLocation, editTextNewReminder, btnAddReminder, remindersAdapter);
+        setUpAddReminderButton(savedLocation, editTextNewReminder, btnAddReminder);
 
         // Set up the positive button (Close)
-        builder.setPositiveButton("Close", (dialog, which) -> {
-            dialog.dismiss();
-        });
+        builder.setPositiveButton("Close", (dialog, which) -> dialog.dismiss());
 
         // Show the dialog
         builder.create().show();
@@ -107,16 +113,17 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
      * @param recyclerView   The RecyclerView used to display reminders.
      * @return The configured RemindersEditAdapter.
      */
-    private RemindersEditAdapter setUpRemindersAdapter(SavedLocation savedLocation, RecyclerView recyclerView) {
-        List<Reminder> remindersList = database.reminderDao().loadRemindersForLocation(savedLocation.getLocationID());
-        RemindersEditAdapter remindersAdapter = new RemindersEditAdapter(remindersList);
-        remindersAdapter.setReminders(remindersList);
-        remindersAdapter.setLocationID(savedLocation.getLocationID());
-
+    private void setUpRemindersAdapter(SavedLocation savedLocation, RecyclerView recyclerView) {
+        RemindersEditAdapter remindersAdapter = new RemindersEditAdapter(new ArrayList<>());
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setAdapter(remindersAdapter);
 
-        return remindersAdapter;
+        reminderRepository.loadRemindersForLocation(savedLocation.getLocationID()).observe(lifecycleOwner, remindersList -> {
+            if (remindersList != null) {
+                remindersAdapter.setReminders(remindersList);
+                remindersAdapter.setLocationID(savedLocation.getLocationID());
+            }
+        });
     }
 
     /**
@@ -125,9 +132,8 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
      * @param savedLocation   The SavedLocation object to which reminders are added.
      * @param editText        The EditText for entering a new reminder.
      * @param addButton       The Button used to add a new reminder.
-     * @param remindersAdapter The RemindersEditAdapter used to update the list of reminders.
      */
-    private void setUpAddReminderButton(SavedLocation savedLocation, EditText editText, Button addButton, RemindersEditAdapter remindersAdapter) {
+    private void setUpAddReminderButton(SavedLocation savedLocation, EditText editText, Button addButton) {
         addButton.setOnClickListener(v -> {
             String newReminderText = editText.getText().toString().trim();
             Reminder newReminder = new Reminder(savedLocation.getLocationID(), newReminderText);
@@ -140,14 +146,8 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
 
                 executor.execute(() -> {
                     for (Reminder reminder : savedLocation.getReminders()) {
-                        database.reminderDao().addNewReminder(reminder);
+                        reminderRepository.addNewReminder(reminder,null);
                     }
-
-                    handler.post(() -> {
-                        remindersAdapter.setReminders(savedLocation.getReminders());
-                        remindersAdapter.setLocationID(savedLocation.getLocationID());
-                        editText.setText("");
-                    });
                 });
             }
         });

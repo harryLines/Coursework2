@@ -3,13 +3,14 @@ package com.example.trailblazer;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -23,13 +24,29 @@ import java.util.Locale;
 class TripAdapter extends ArrayAdapter<Trip> {
     private final int resource;
 
+    /**
+     * Constructor for TripAdapter.
+     *
+     * @param context The current context.
+     * @param resource The resource ID for a layout file containing a layout to use when instantiating views.
+     * @param trips The list of Trip objects to represent in the ListView.
+     */
     public TripAdapter(Context context, int resource, List<Trip> trips) {
         super(context, resource, trips);
         this.resource = resource;
     }
 
+    /**
+     * Provides a view for an AdapterView (ListView, GridView, etc.)
+     *
+     * @param position The position of the item within the adapter's data set of the item whose view we want.
+     * @param convertView The old view to reuse, if possible.
+     * @param parent The parent that this view will eventually be attached to.
+     * @return A View corresponding to the data at the specified position.
+     */
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View view = convertView;
 
         if (view == null) {
@@ -102,6 +119,12 @@ class TripAdapter extends ArrayAdapter<Trip> {
         return view;
     }
 
+    /**
+     * Returns the resource ID of the weather icon corresponding to the specified weather type.
+     *
+     * @param weatherType The weather type for which the icon is needed.
+     * @return The resource ID of the corresponding weather icon drawable, or -1 if the weather type is unknown or default.
+     */
     private int getWeatherIconResourceId(int weatherType) {
         switch (weatherType) {
             case Trip.WEATHER_SUNNY:
@@ -121,6 +144,12 @@ class TripAdapter extends ArrayAdapter<Trip> {
         }
     }
 
+    /**
+     * Determines if the given date is within the current year.
+     *
+     * @param date The date to check.
+     * @return true if the date is within the current year, false otherwise.
+     */
     private boolean isCurrentYear(Date date) {
         SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
         String tripYear = yearFormat.format(date);
@@ -128,6 +157,12 @@ class TripAdapter extends ArrayAdapter<Trip> {
         return tripYear.equals(currentYear);
     }
 
+    /**
+     * Converts a movement type integer into a readable string.
+     *
+     * @param movementType The movement type as an integer. Expected values are 0 (Walking), 1 (Running), and 2 (Cycling).
+     * @return A string representing the type of movement. Returns "Unknown" for any values outside the expected range.
+     */
     private String getMovementTypeString(int movementType) {
         switch (movementType) {
             case 0:

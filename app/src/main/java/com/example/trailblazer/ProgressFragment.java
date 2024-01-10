@@ -13,7 +13,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,14 +25,10 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.snackbar.Snackbar;
-
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +41,7 @@ import java.util.concurrent.Executors;
 public class ProgressFragment extends Fragment {
     List<Trip> tripHistory;
     private String prevSelectedTimeframe = "1 Week";
-    public Database database;
+    TripRepository tripRepository;
     public ProgressFragment() {
         tripHistory = new ArrayList<>();
     }
@@ -65,9 +60,7 @@ public class ProgressFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.progress_fragment, container, false);
-
-        database = DatabaseManager.getInstance(requireContext());
-
+        tripRepository = new TripRepository(DatabaseManager.getInstance(requireContext()).tripDao());
         // Get the Spinner from the layout
         Spinner spinnerDuration = view.findViewById(R.id.dropDownTimeframe);
 
@@ -389,34 +382,16 @@ public class ProgressFragment extends Fragment {
         cardView.setBackground(gradientDrawable);
     }
 
-    private String getMovementTypeName(int movementType) {
-        // Map movement type to a human-readable name
-        switch (movementType) {
-            case Trip.MOVEMENT_WALK:
-                return "Walking";
-            case Trip.MOVEMENT_RUN:
-                return "Running";
-            case Trip.MOVEMENT_CYCLE:
-                return "Cycling";
-            default:
-                return "Unknown";
-        }
-    }
-
     /**
      * Loads trip history from the database and updates statistics for the previously selected timeframe.
      */
     private void loadTripHistory() {
-        // Load trip history from the database
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-
-        executor.execute(() -> {
-            tripHistory = database.tripDao().loadTripHistory();
-            //Background work here
-            handler.post(() -> {
-                updateStatistics(prevSelectedTimeframe);
-            });
+        // Assuming tripRepository is already initialized
+        // Observe LiveData from the repository
+        tripRepository.loadTripHistory().observe(getViewLifecycleOwner(), trips -> {
+            // trips will be updated automatically when the data changes
+            tripHistory = trips;
+            updateStatistics(prevSelectedTimeframe);
         });
     }
 
@@ -435,7 +410,7 @@ public class ProgressFragment extends Fragment {
         TextView textViewWalkingDistanceValue = requireView().findViewById(R.id.textViewWalkingDistanceValue);
         textViewWalkingDistanceValue.setText(formatDistance(totalDistance));
 
-        TextView textViewWalkingDistanceChange = getView().findViewById(R.id.textViewWalkingDistanceChange);
+        TextView textViewWalkingDistanceChange = requireView().findViewById(R.id.textViewWalkingDistanceChange);
         textViewWalkingDistanceChange.setText(formatTimeChange(percentChangeDistance));
 
         TextView textViewWalkingSpeedValue = getView().findViewById(R.id.textViewWalkingSpeedValue);
@@ -466,7 +441,7 @@ public class ProgressFragment extends Fragment {
         TextView textViewRunningDistanceValue = requireView().findViewById(R.id.textViewRunningDistanceValue);
         textViewRunningDistanceValue.setText(formatDistance(totalDistance));
 
-        TextView textViewRunningDistanceChange = getView().findViewById(R.id.textViewRunningDistanceChange);
+        TextView textViewRunningDistanceChange = requireView().findViewById(R.id.textViewRunningDistanceChange);
         textViewRunningDistanceChange.setText(formatTimeChange(percentChangeDistance));
 
         TextView textViewRunningSpeedValue = getView().findViewById(R.id.textViewRunningSpeedValue);
@@ -497,7 +472,7 @@ public class ProgressFragment extends Fragment {
         TextView textViewCyclingDistanceValue = requireView().findViewById(R.id.textViewCyclingDistanceValue);
         textViewCyclingDistanceValue.setText(formatDistance(totalDistance));
 
-        TextView textViewCyclingDistanceChange = getView().findViewById(R.id.textViewCyclingDistanceChange);
+        TextView textViewCyclingDistanceChange = requireView().findViewById(R.id.textViewCyclingDistanceChange);
         textViewCyclingDistanceChange.setText(formatTimeChange(percentChangeDistance));
 
         TextView textViewCyclingSpeedValue = getView().findViewById(R.id.textViewCyclingSpeedValue);

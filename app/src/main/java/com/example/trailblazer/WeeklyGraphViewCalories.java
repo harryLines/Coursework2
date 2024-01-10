@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import java.text.SimpleDateFormat;
@@ -15,33 +14,31 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Custom view to display calorie data as a bar graph on a weekly basis.
+ * This view takes a list of calorie values and corresponding dates, and draws a bar graph with these values.
+ */
 public class WeeklyGraphViewCalories extends View {
     private List<Integer> dataPoints;
     private List<Date> dateList;
     private int themeColor;
     final Paint textPaint = new Paint();
     final Paint barPaint = new Paint();
+    private int dataType;
 
     public WeeklyGraphViewCalories(Context context) {
         super(context);
         themeColor = ThemeManager.getAccentColor(getContext());
-        init();
     }
 
     public WeeklyGraphViewCalories(Context context, AttributeSet attrs) {
         super(context, attrs);
         themeColor = ThemeManager.getAccentColor(getContext());
-        init();
     }
 
     public WeeklyGraphViewCalories(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         themeColor = ThemeManager.getAccentColor(getContext());
-        init();
-    }
-
-    private void init() {
-        // Initialize your dataPoints here
     }
 
     @Override
@@ -112,6 +109,12 @@ public class WeeklyGraphViewCalories extends View {
         }
     }
 
+    /**
+     * Formats the given date into a readable string.
+     *
+     * @param date The date to format.
+     * @return A string representing the formatted date.
+     */
     private String formatDate(Date date) {
         SimpleDateFormat dayFormat = new SimpleDateFormat("EEE", Locale.getDefault()); // Format for day of the week
         String dayOfWeek = dayFormat.format(date);
@@ -123,6 +126,12 @@ public class WeeklyGraphViewCalories extends View {
         return dateString.equals(todayString) ? "Today" : dayOfWeek;
     }
 
+    /**
+     * Finds the maximum value in a list of integers.
+     *
+     * @param values The list of integer values.
+     * @return The maximum value found in the list.
+     */
     private float getMaxValue(List<Integer> values) {
         int max = Integer.MIN_VALUE;
         for (int value : values) {
@@ -131,17 +140,18 @@ public class WeeklyGraphViewCalories extends View {
         return max;
     }
 
+    /**
+     * Sets the data points and corresponding dates for the graph and triggers a re-draw.
+     *
+     * @param dataPoints A list of integers representing calorie data points.
+     * @param dateList A list of Date objects corresponding to each calorie data point.
+     */
     public void setDataPoints(List<Integer> dataPoints, List<Date> dateList) {
         // Reverse the order of dataPoints and dateList
         Collections.reverse(dateList);
 
         this.dataPoints = dataPoints;
         this.dateList = dateList;
-        invalidate(); // Trigger onDraw
-    }
-
-    public void setThemeColor(int color) {
-        this.themeColor = color;
-        invalidate(); // Trigger onDraw
+        invalidate();
     }
 }

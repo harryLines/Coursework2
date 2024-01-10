@@ -21,15 +21,6 @@ public class Trip {
     public static final int WEATHER_THUNDERSTORM = 3;
     public static final int WEATHER_FOGGY = 4;
     public static final int WEATHER_WINDY = 5;
-
-    public long getTripID() {
-        return tripID;
-    }
-
-    public void setTripID(long tripID) {
-        this.tripID = tripID;
-    }
-
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "_id")
     private long tripID;
@@ -52,43 +43,29 @@ public class Trip {
     @ColumnInfo(name = "image")
     private String image;
 
+    public long getTripID() {
+        return tripID;
+    }
+    public void setTripID(long tripID) {
+        this.tripID = tripID;
+    }
     public int getWeather() {
         return weather;
     }
-
     public void setWeather(int weather) {
         this.weather = weather;
     }
-
     public String getImage() {
         return image;
     }
-
     public void setImage(String image) {
         this.image = image;
     }
-
     public int getCaloriesBurned() {
         return caloriesBurned;
     }
-
     public void setCaloriesBurned(int caloriesBurned) {
         this.caloriesBurned = caloriesBurned;
-    }
-    public Trip(Date date, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories, int weather, String image) {
-        this.date = date;
-        this.movementType = movementType;
-        this.distance = distance;
-        this.timeInSeconds = time;
-        this.routePoints = routePoints;
-        this.elevationData = elevationData;
-        this.caloriesBurned = calories;
-        this.weather = weather;
-        this.image = image;
-    }
-
-    public Trip() {
-
     }
 
     public Date getDate() {
@@ -136,5 +113,20 @@ public class Trip {
 
     public void setElevationData(List<Double> elevationData) {
         this.elevationData = elevationData;
+    }
+    public Trip(Date date, double distance, int movementType, long time, List<LatLng> routePoints, List<Double> elevationData, int calories, int weather, String image) {
+        this.date = date;
+        this.movementType = movementType;
+        this.distance = distance;
+        this.timeInSeconds = time;
+        this.routePoints = routePoints;
+        this.elevationData = elevationData;
+        this.caloriesBurned = calories;
+        this.weather = weather;
+        this.image = image;
+    }
+
+    public Trip() {
+
     }
 }

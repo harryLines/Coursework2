@@ -5,7 +5,6 @@ import java.util.Locale;
 
 public class ProgressCalculations {
 
-
     /**
      * Formats a distance value to a human-readable string with two decimal places and " km" appended.
      *

@@ -75,9 +75,9 @@ public class LoggingFragment extends Fragment {
     ImageButton btnAddPhoto;
     private ReminderAdapter reminderAdapter;
     private LoggingFragmentViewModel viewModel;
-    private Database database;
     ActivityResultLauncher<String> requestCameraPermissionLauncher;
     ActivityResultLauncher<Void> cameraLauncher;
+    GoalRepository goalRepository;
 
     public LoggingFragment() {
     }
@@ -87,9 +87,8 @@ public class LoggingFragment extends Fragment {
                              Bundle savedInstanceState) {
         LoggingFragmentBinding binding = DataBindingUtil.inflate(inflater, R.layout.logging_fragment, container, false);
 
-        database = DatabaseManager.getInstance(requireContext());
         viewModel = new ViewModelProvider(this).get(LoggingFragmentViewModel.class);
-
+        goalRepository = new GoalRepository(DatabaseManager.getInstance(requireContext()).goalDao());
         // Bind the ViewModel to the layout
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(this);
@@ -200,7 +199,7 @@ public class LoggingFragment extends Fragment {
      */
     public String saveImageToFile(byte[] imageData) {
         // Get the directory for the app's private pictures directory.
-        File directory = new File(getActivity().getFilesDir(), "images");
+        File directory = new File(requireActivity().getFilesDir(), "images");
         if (!directory.exists()) {
             directory.mkdirs();
         }
@@ -306,9 +305,7 @@ public class LoggingFragment extends Fragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
         builder.setTitle("Tracking Stopped")
                 .setMessage(getCurrentValuesMessage())
-                .setPositiveButton("OK", (dialog, which) -> {
-                    resetValues();
-                })
+                .setPositiveButton("OK", (dialog, which) -> resetValues())
                 .show();
     }
 
@@ -354,17 +351,11 @@ public class LoggingFragment extends Fragment {
         double burnedCalories = viewModel.getCalories().getValue();
         double distanceCovered = viewModel.getDistance().getValue(); // Assuming distance is the metric for kilometers goal
         int stepsTaken = viewModel.getSteps().getValue();
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
 
-        Database database = DatabaseManager.getInstance(requireContext());
-
-        executor.execute(() -> {
-            List<Goal> currentGoals = database.goalDao().loadGoals();
+        // Use the repository to load and update goals
+        goalRepository.loadGoals().observe(getViewLifecycleOwner(), currentGoals -> {
             updateProgress(currentGoals, burnedCalories, distanceCovered, stepsTaken);
-            database.goalDao().updateGoals(currentGoals);
-            handler.post(() -> {
-            });
+            goalRepository.updateGoals(currentGoals);
         });
     }
 

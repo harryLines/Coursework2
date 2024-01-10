@@ -13,7 +13,6 @@ import java.util.List;
 public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder> {
     private final List<String> reminders;
 
-
     /**
      * Constructs a new ReminderAdapter with the provided list of reminders.
      *
@@ -22,7 +21,6 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.Remind
     public ReminderAdapter(List<String> reminders) {
         this.reminders = reminders;
     }
-
 
     @NonNull
     @Override

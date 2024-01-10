@@ -18,6 +18,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 public class Provider extends ContentProvider {
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -25,7 +26,10 @@ public class Provider extends ContentProvider {
     private static final int TRIPS = 102;
     private static final int GOALS = 104;
     private static final int SAVED_LOCATIONS = 106;
-    private Database database;
+    private GoalRepository goalRepository;
+    private TripRepository tripRepository;
+    private SavedLocationRepository savedLocationRepository;
+    private ReminderRepository reminderRepository;
 
     static {
         sUriMatcher.addURI(Contract.AUTHORITY, "reminders", REMINDERS); //WORKS
@@ -36,7 +40,11 @@ public class Provider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        database = DatabaseManager.getInstance(requireContext());
+        Database database = DatabaseManager.getInstance(getContext());
+        goalRepository = new GoalRepository(database.goalDao());
+        tripRepository = new TripRepository(database.tripDao());
+        savedLocationRepository = new SavedLocationRepository(database.savedLocationDao());
+        reminderRepository = new ReminderRepository(database.reminderDao());
         return true;
     }
 
@@ -49,28 +57,32 @@ public class Provider extends ContentProvider {
         switch (match) {
             case GOALS:
                 cursor = new MatrixCursor(new String[]{"metric_type","number_of_timeframes","timeframe_type","progress","target","date_created","is_complete"});
-                List<Goal> goals = database.goalDao().loadGoals(); // Implement this method according to your data source.
+                List<Goal> goals = goalRepository.loadGoals().getValue(); // Implement this method according to your data source.
+                assert goals != null;
                 for (Goal goal : goals) {
                     cursor.addRow(new Object[]{goal.getMetricType(), goal.getNumberOfTimeframes(), goal.getTimeframeType(), goal.getProgress(), goal.getTarget(), goal.getDateCreated(), goal.isComplete});
                 }
                 return cursor;
             case TRIPS:
                 cursor = new MatrixCursor(new String[]{"date","time","movement_type","distance_traveled","calories_burned","elevation_data","route_points","weather","image"});
-                List<Trip> trips = database.tripDao().loadTripHistory();
+                List<Trip> trips = tripRepository.loadTripHistory().getValue();
+                assert trips != null;
                 for(Trip trip : trips) {
                     cursor.addRow(new Object[]{trip.getDate(),trip.getTimeInSeconds(),trip.getMovementType(),trip.getDistance(),trip.getCaloriesBurned(),trip.getElevationData(),trip.getRoutePoints(),trip.getWeather(),trip.getImage()});
                 }
                 return cursor;
             case SAVED_LOCATIONS:
                 cursor = new MatrixCursor(new String[]{"name","latlng","reminders"});
-                List<SavedLocation> savedLocations = database.savedLocationDao().loadSavedLocations();
+                List<SavedLocation> savedLocations = savedLocationRepository.loadSavedLocations().getValue();
+                assert savedLocations != null;
                 for(SavedLocation location : savedLocations) {
                     cursor.addRow(new Object[]{location.getName(),location.getLatLng(),location.getReminders()});
                 }
                 return cursor;
             case REMINDERS:
                 cursor = new MatrixCursor(new String[]{"location_id", "reminder_text"});
-                List<Reminder> reminders = database.reminderDao().loadReminders();
+                List<Reminder> reminders = reminderRepository.loadReminders().getValue();
+                assert reminders != null;
                 for (Reminder reminder : reminders) {
                     cursor.addRow(new Object[]{reminder.getLocationID(), reminder.getReminderText()});
                 }
@@ -90,7 +102,7 @@ public class Provider extends ContentProvider {
     @Override
     public Uri insert(@NonNull Uri uri, @Nullable ContentValues contentValues) {
         final int match = sUriMatcher.match(uri);
-        Uri returnUri = null;
+        final Uri[][] returnUri = {new Uri[1]};
 
         switch (match) {
             case REMINDERS:
@@ -109,12 +121,20 @@ public class Provider extends ContentProvider {
                 }
                 // Assuming you have a method in your DAO to insert a reminder
                 Reminder newReminder = new Reminder(locationID,reminderText);
-                long reminderId = database.reminderDao().addNewReminder(newReminder);
-                if (reminderId > 0) {
-                    returnUri = ContentUris.withAppendedId(uri, reminderId);
-                } else {
-                    throw new android.database.SQLException("Failed to insert row into " + uri);
-                }
+                reminderRepository.addNewReminder(newReminder, new ReminderRepository.ReminderInsertCallback() {
+                    @Override
+                    public void onReminderInserted(long reminderId) {
+                        // Handle the success case, e.g., notify the user
+                        // Note: You cannot return a value here; handle the result asynchronously
+                        returnUri[0] = new Uri[]{ContentUris.withAppendedId(uri, reminderId)};
+                    }
+
+                    @Override
+                    public void onInsertFailed() {
+                        // Handle the failure case
+                        returnUri[0][0] = null;
+                    }
+                });
                 break;
             case GOALS:
                 int metricType;
@@ -162,12 +182,20 @@ public class Provider extends ContentProvider {
                     return null;
                 }
                 Goal newGoal = new Goal(metricType, numberOfTimeframes, timeframeType,progress,target,dateCreated,isComplete);
-                long goalID = database.goalDao().addNewGoal(newGoal);
-                if (goalID > 0) {
-                    returnUri = ContentUris.withAppendedId(uri, goalID);
-                } else {
-                    throw new android.database.SQLException("Failed to insert row into " + uri);
-                }
+                goalRepository.addNewGoal(newGoal, new GoalRepository.GoalInsertCallback() {
+                    @Override
+                    public void onGoalInserted(long goalId) {
+                        // Handle the success case, e.g., notify the user
+                        // Note: You cannot return a value here; handle the result asynchronously
+                        returnUri[0] = new Uri[]{ContentUris.withAppendedId(uri, goalId)};
+                    }
+
+                    @Override
+                    public void onInsertFailed() {
+                        // Handle the failure case
+                        returnUri[0][0] = null;
+                    }
+                });
                 break;
             case TRIPS:
                 Date date;
@@ -228,18 +256,26 @@ public class Provider extends ContentProvider {
                 }
 
                 Trip newTrip = new Trip(date,distance,movementType,timeInSeconds,routePoints,elevationData,caloriesBurned,weather,image);
-                long tripID = database.tripDao().addNewTrip(newTrip);
-                if (tripID > 0) {
-                    returnUri = ContentUris.withAppendedId(uri, tripID);
-                } else {
-                    throw new android.database.SQLException("Failed to insert row into " + uri);
-                }
+                tripRepository.addNewTrip(newTrip, new TripRepository.TripInsertCallback() {
+                    @Override
+                    public void onTripInserted(long tripId) {
+                        // Handle the success case, e.g., notify the user
+                        // Note: You cannot return a value here; handle the result asynchronously
+                        returnUri[0] = new Uri[]{ContentUris.withAppendedId(uri, tripId)};
+                    }
+
+                    @Override
+                    public void onInsertFailed() {
+                        // Handle the failure case
+                        returnUri[0][0] = null;
+                    }
+                });
                 break;
             case SAVED_LOCATIONS:
                 String name;
                 LatLng latlng;
 
-                if (contentValues.containsKey("name")) {
+                if (Objects.requireNonNull(contentValues).containsKey("name")) {
                     name = contentValues.getAsString("name");
                 } else {
                     return null;
@@ -250,20 +286,28 @@ public class Provider extends ContentProvider {
                     return null;
                 }
                 SavedLocation newLocation = new SavedLocation(name,latlng);
-                locationID = database.savedLocationDao().addNewLocation(newLocation);
-                if (locationID > 0) {
-                    returnUri = ContentUris.withAppendedId(uri, locationID);
-                } else {
-                    throw new android.database.SQLException("Failed to insert row into " + uri);
-                }
+                savedLocationRepository.addNewLocation(newLocation, new SavedLocationRepository.SavedLocationInsertCallback() {
+                    @Override
+                    public void onSavedLocationInserted(long locationID) {
+                        // Handle the success case, e.g., notify the user
+                        // Note: You cannot return a value here; handle the result asynchronously
+                        returnUri[0] = new Uri[]{ContentUris.withAppendedId(uri, locationID)};
+                    }
+
+                    @Override
+                    public void onInsertFailed() {
+                        // Handle the failure case
+                        returnUri[0][0] = null;
+                    }
+                });
 
                 break;
             default:
                 throw new IllegalArgumentException("Insertion is not supported for " + uri);
         }
 
-        getContext().getContentResolver().notifyChange(uri, null);
-        return returnUri;
+        Objects.requireNonNull(getContext()).getContentResolver().notifyChange(uri, null);
+        return returnUri[0][0];
     }
 
     public Date parseDateString(String dateString) {

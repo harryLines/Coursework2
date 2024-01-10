@@ -1,5 +1,6 @@
 package com.example.trailblazer;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
@@ -13,5 +14,5 @@ public interface GoalDao {
     @Update
     void updateGoals(List<Goal> updatedGoals);
     @Query("SELECT * FROM goals")
-    List<Goal> loadGoals();
+    LiveData<List<Goal>> loadGoals();
 }

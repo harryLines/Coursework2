@@ -2,7 +2,7 @@ package com.example.trailblazer;
 
 import android.widget.TextView;
 import androidx.databinding.BindingAdapter;
-import java.text.DecimalFormat;
+
 import java.util.Locale;
 
 /**

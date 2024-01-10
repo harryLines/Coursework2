@@ -1,7 +1,5 @@
 package com.example.trailblazer;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,7 +59,10 @@ public class RemindersEditAdapter extends RecyclerView.Adapter<RemindersEditAdap
 
     @Override
     public int getItemCount() {
-        return reminders.size();
+        if(reminders != null) {
+            return reminders.size();
+        }
+        return 0;
     }
 
     /**
@@ -105,9 +106,7 @@ public class RemindersEditAdapter extends RecyclerView.Adapter<RemindersEditAdap
                     Database database = DatabaseManager.getInstance(itemView.getContext());
 
                     ExecutorService executor = Executors.newSingleThreadExecutor();
-                    executor.execute(() -> {
-                        database.reminderDao().removeReminder(reminder.getId());
-                    });
+                    executor.execute(() -> database.reminderDao().removeReminder(reminder.getId()));
                 }
             });
         }

@@ -1,5 +1,6 @@
 package com.example.trailblazer;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
@@ -12,5 +13,5 @@ public interface SavedLocationDao {
     @Query("DELETE FROM saved_locations")
     void deleteSavedLocations();
     @Query("SELECT * FROM saved_locations")
-    List<SavedLocation> loadSavedLocations();
+    LiveData<List<SavedLocation>> loadSavedLocations();
 }

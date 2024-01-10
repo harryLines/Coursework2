@@ -8,6 +8,12 @@ import android.widget.Button;
 
 import androidx.fragment.app.Fragment;
 
+/**
+ * SettingsFragment is a Fragment subclass used to display and manage settings options.
+ * It provides an interface for theme changes and data clearing within the app.
+ * <p>
+ * This fragment is designed to be used within a SettingsActivity context.
+ */
 public class SettingsFragment extends Fragment {
 
     public SettingsFragment() {
@@ -21,8 +27,6 @@ public class SettingsFragment extends Fragment {
         Button btnTheme = view.findViewById(R.id.btnTheme);
         Button btnClearData = view.findViewById(R.id.btnClearData);
 
-
-
         btnTheme.setOnClickListener(v -> {
             if (getActivity() instanceof SettingsActivity) {
                 ((SettingsActivity) getActivity()).loadFragment(new ThemeSettingsFragment());
@@ -34,7 +38,6 @@ public class SettingsFragment extends Fragment {
                 ((SettingsActivity) getActivity()).loadFragment(new ClearDataFragment());
             }
         });
-
         return view;
     }
 }

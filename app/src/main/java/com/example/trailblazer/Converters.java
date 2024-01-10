@@ -22,33 +22,6 @@ public class Converters {
     private static Gson gson = new Gson();
 
     /**
-     * Converts a JSON string representation to a list of Reminder objects.
-     *
-     * @param data The JSON string representation of Reminder objects.
-     * @return A list of Reminder objects.
-     */
-    @TypeConverter
-    public static List<Reminder> stringToReminders(String data) {
-        if (data == null) {
-            return Collections.emptyList();
-        }
-
-        Type listType = new TypeToken<List<Reminder>>() {}.getType();
-        return gson.fromJson(data, listType);
-    }
-
-    /**
-     * Converts a list of Reminder objects to a JSON string representation.
-     *
-     * @param reminders A list of Reminder objects.
-     * @return The JSON string representation of the list of Reminder objects.
-     */
-    @TypeConverter
-    public static String remindersToString(List<Reminder> reminders) {
-        return gson.toJson(reminders);
-    }
-
-    /**
      * Converts a list of LatLng objects to a string representation.
      *
      * @param latLngs The list of LatLng objects to be converted.
@@ -75,7 +48,7 @@ public class Converters {
         if (latLngString == null || latLngString.isEmpty()) {
             return null;
         }
-        List<String> pairs = Arrays.asList(latLngString.split(";"));
+        String[] pairs = latLngString.split(";");
         List<LatLng> latLngList = new ArrayList<>();
         for (String pair : pairs) {
             String[] latLng = pair.split(",");
@@ -165,35 +138,4 @@ public class Converters {
         return date == null ? null : date.getTime();
     }
 
-    /**
-     * Converts a string representation to a List of Strings.
-     *
-     * @param value The input string.
-     * @return A List of Strings.
-     */
-    @TypeConverter
-    public static List<String> fromStringToList(String value) {
-        if (value == null) {
-            return null;
-        }
-        Gson gson = new Gson();
-        Type type = new TypeToken<List<String>>() {}.getType();
-        return gson.fromJson(value, type);
-    }
-
-    /**
-     * Converts a List of Strings to a single string.
-     *
-     * @param list The List of Strings.
-     * @return A single string representing the List.
-     */
-    @TypeConverter
-    public static String fromListToString(List<String> list) {
-        if (list == null) {
-            return null;
-        }
-        Gson gson = new Gson();
-        Type type = new TypeToken<List<String>>() {}.getType();
-        return gson.toJson(list, type);
-    }
 }

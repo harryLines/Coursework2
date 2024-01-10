@@ -68,17 +68,8 @@
 
         </LinearLayout>
 
-        <com.example.trailblazer.WeeklyGraphViewDistance
+        <com.example.trailblazer.WeeklyGraphView
             android:id="@+id/weeklyGraphViewDistance"
-            style="@style/Regular"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_margin="12sp"
-            android:layout_weight="10"
-            android:visibility="gone" />
-
-        <com.example.trailblazer.WeeklyGraphViewCalories
-            android:id="@+id/weeklyGraphViewCalories"
             style="@style/Regular"
             android:layout_width="match_parent"
             android:layout_height="0dp"

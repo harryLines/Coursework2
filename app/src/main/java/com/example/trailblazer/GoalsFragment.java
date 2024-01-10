@@ -31,11 +31,10 @@ import java.util.concurrent.Executors;
  * It allows users to add new goals, view existing goals, and filter completed goals.
  */
 public class GoalsFragment extends Fragment {
-    GoalsFragmentViewModel viewModel;
-    GoalsFragmentBinding binding;
-    Button btnAddGoal;
-    public Database database;
-    ExecutorService executor;
+    private GoalsFragmentViewModel viewModel;
+    private GoalRepository goalRepository;
+    private GoalsFragmentBinding binding;
+    private Button btnAddGoal;
 
     /**
      * Constructs a GoalsFragment.
@@ -55,8 +54,7 @@ public class GoalsFragment extends Fragment {
         binding = DataBindingUtil.inflate(inflater, R.layout.goals_fragment, container, false);
         viewModel = new ViewModelProvider(this).get(GoalsFragmentViewModel.class);
         btnAddGoal = binding.btnCreateGoal;
-        database = DatabaseManager.getInstance(requireContext());
-
+        goalRepository = new GoalRepository(DatabaseManager.getInstance(requireContext()).goalDao());
         // Bind the ViewModel to the layout
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(this);
@@ -70,7 +68,7 @@ public class GoalsFragment extends Fragment {
      * Sets up the goals list by observing changes in LiveData and updating the adapter.
      */
     private void setupGoalsList() {
-        LiveData<List<Goal>> goalsLiveData = getGoalsFromDatabase();
+        LiveData<List<Goal>> goalsLiveData = goalRepository.loadGoals();
 
         // Observe changes in the LiveData and update the adapter
         goalsLiveData.observe(getViewLifecycleOwner(), goals -> {
@@ -83,26 +81,6 @@ public class GoalsFragment extends Fragment {
 
         btnAddGoal.setOnClickListener(v -> showAddGoalDialog());
     }
-
-    /**
-     * Retrieves goals from the database and returns them as LiveData.
-     *
-     * @return LiveData containing a list of goals.
-     */
-    public LiveData<List<Goal>> getGoalsFromDatabase() {
-        MutableLiveData<List<Goal>> goalListLiveData = new MutableLiveData<>();
-
-        executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-
-        executor.execute(() -> {
-            List<Goal> goalList = database.goalDao().loadGoals(); // Fetching data in the background
-            handler.post(() -> goalListLiveData.setValue(goalList)); // Updating LiveData on the main thread
-        });
-
-        return goalListLiveData;
-    }
-
     /**
      * Filters out completed goals from the provided list of goals.
      *
@@ -189,17 +167,7 @@ public class GoalsFragment extends Fragment {
             // Define the desired date format
             Goal newGoal = new Goal(metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
 
-            executor = Executors.newSingleThreadExecutor();
-            Handler handler = new Handler(Looper.getMainLooper());
-
-            executor.execute(() -> {
-                database.goalDao().addNewGoal(newGoal);
-                List<Goal> updatedGoalsList = database.goalDao().loadGoals();
-                handler.post(() -> {
-                    viewModel.setGoalsList(updatedGoalsList);
-                    setupGoalsList();
-                });
-            });
+            goalRepository.addNewGoal(newGoal,null);
         });
 
         // Set up the negative button (Cancel)

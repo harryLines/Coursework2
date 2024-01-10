@@ -19,7 +19,7 @@ public class SavedLocationTest {
 
     @Test
     public void testGetSetName() {
-        SavedLocation savedLocation = new SavedLocation("Park", new LatLng(0, 0), new ArrayList<>());
+        SavedLocation savedLocation = new SavedLocation("Park", new LatLng(0, 0));
 
         assertEquals("Park", savedLocation.getName());
 
@@ -31,7 +31,7 @@ public class SavedLocationTest {
     @Test
     public void testGetSetLatLng() {
         LatLng initialLatLng = new LatLng(0, 0);
-        SavedLocation savedLocation = new SavedLocation("Park", initialLatLng, new ArrayList<>());
+        SavedLocation savedLocation = new SavedLocation("Park", initialLatLng);
 
         assertEquals(initialLatLng, savedLocation.getLatLng());
 
@@ -53,7 +53,7 @@ public class SavedLocationTest {
 
     @Test
     public void testAddReminder() {
-        SavedLocation savedLocation = new SavedLocation("Home", new LatLng(0, 0), new ArrayList<>());
+        SavedLocation savedLocation = new SavedLocation("Home", new LatLng(0, 0));
 
         assertEquals(0, savedLocation.getReminders().size());
 
@@ -73,7 +73,7 @@ public class SavedLocationTest {
 
     @Test
     public void testGetSetEntered() {
-        SavedLocation savedLocation = new SavedLocation("Park", new LatLng(0, 0), new ArrayList<>());
+        SavedLocation savedLocation = new SavedLocation("Park", new LatLng(0, 0));
 
         assertFalse(savedLocation.isEntered());
 
@@ -84,7 +84,7 @@ public class SavedLocationTest {
 
     @Test
     public void testGetSetLocationID() {
-        SavedLocation savedLocation = new SavedLocation("Park", new LatLng(0, 0), new ArrayList<>());
+        SavedLocation savedLocation = new SavedLocation("Park", new LatLng(0, 0));
 
         assertEquals(0, savedLocation.getLocationID());
 

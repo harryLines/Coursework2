@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import java.text.SimpleDateFormat;
@@ -15,39 +14,46 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class WeeklyGraphViewDistance extends View {
+/**
+ * Custom view to display calorie data as a bar graph on a weekly basis.
+ * This view takes a list of calorie values and corresponding dates, and draws a bar graph with these values.
+ */
+public class WeeklyGraphView extends View {
+    final static int GRAPH_DATE_TYPE_DISTANCE = 0;
+    final static int GRAPH_DATE_TYPE_CALORIES = 1;
+    private int dataType;
     private List<Float> dataPoints;
     private List<Date> dateList;
     private int themeColor;
     private Paint barPaint;
     private Paint textPaint;
 
-    public WeeklyGraphViewDistance(Context context) {
+    public int getDataType() {
+        return dataType;
+    }
+    public void setDataType(int dataType) {
+        this.dataType = dataType;
+    }
+
+    public WeeklyGraphView(Context context) {
         super(context);
         themeColor = ThemeManager.getAccentColor(getContext());
         barPaint = new Paint();
         textPaint = new Paint();
-        init();
     }
 
-    public WeeklyGraphViewDistance(Context context, AttributeSet attrs) {
+    public WeeklyGraphView(Context context, AttributeSet attrs) {
         super(context, attrs);
         themeColor = ThemeManager.getAccentColor(getContext());
         barPaint = new Paint();
         textPaint = new Paint();
-        init();
     }
 
-    public WeeklyGraphViewDistance(Context context, AttributeSet attrs, int defStyleAttr) {
+    public WeeklyGraphView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         themeColor = ThemeManager.getAccentColor(getContext());
         barPaint = new Paint();
         textPaint = new Paint();
-        init();
-    }
-
-    private void init() {
-        // Initialize your dataPoints here
     }
 
     @Override
@@ -79,8 +85,8 @@ public class WeeklyGraphViewDistance extends View {
 
         // Draw bars and labels
         for (int i = 0; i < numPoints; i++) {
-            float valueInMeters = dataPoints.get(i);
-            float normalizedValue = (valueInMeters / maxValue) * height;
+            float value = dataPoints.get(i);
+            float normalizedValue = (value / maxValue) * height;
 
             float left = i * barWidth;
             float top = height - normalizedValue;
@@ -90,19 +96,25 @@ public class WeeklyGraphViewDistance extends View {
             canvas.drawRect(left, top, right, (float) height, barPaint);
 
             // Draw label in the middle of the bar
-            float valueInKilometers = valueInMeters / 1000.0f;
-            String distanceLabel = String.format("%.2f km", valueInKilometers);
+            float valueInKilometers = value / 1000.0f;
+
+            String label;
+            if(dataType == GRAPH_DATE_TYPE_DISTANCE) {
+                label = String.format("%.2f km", valueInKilometers);
+            } else {
+                label= String.format(Locale.getDefault(), "%d kcal", (int) value);
+            }
 
             // Rotate the canvas for vertical text
             canvas.save();
             canvas.rotate(-90, left + (barWidth / 2), (top + (float) height) / 2);
 
             // Ensure that the label is within the canvas bounds
-            float labelX = left + (barWidth / 2) - (textPaint.measureText(distanceLabel) / 2);
+            float labelX = left + (barWidth / 2) - (textPaint.measureText(label) / 2);
             float labelY = (top + (float) height) / 2;
             labelY = Math.max(labelY, 0);
 
-            canvas.drawText(distanceLabel, labelX, labelY, textPaint);
+            canvas.drawText(label, labelX, labelY, textPaint);
 
             // Restore the canvas to its original orientation
             canvas.restore();
@@ -119,7 +131,12 @@ public class WeeklyGraphViewDistance extends View {
         }
     }
 
-
+    /**
+     * Formats the given date into a readable string.
+     *
+     * @param date The date to format.
+     * @return A string representing the formatted date.
+     */
     private String formatDate(Date date) {
         SimpleDateFormat dayFormat = new SimpleDateFormat("EEE", Locale.getDefault()); // Format for day of the week
         String dayOfWeek = dayFormat.format(date);
@@ -131,7 +148,12 @@ public class WeeklyGraphViewDistance extends View {
         return dateString.equals(todayString) ? "Today" : dayOfWeek;
     }
 
-
+    /**
+     * Finds the maximum value in a list of integers.
+     *
+     * @param values The list of integer values.
+     * @return The maximum value found in the list.
+     */
     private float getMaxValue(List<Float> values) {
         float max = Float.MIN_VALUE;
         for (float value : values) {
@@ -140,18 +162,17 @@ public class WeeklyGraphViewDistance extends View {
         return max;
     }
 
+    /**
+     * Sets the data points and corresponding dates for the graph and triggers a re-draw.
+     *
+     * @param dataPoints A list of integers representing calorie data points.
+     * @param dateList A list of Date objects corresponding to each calorie data point.
+     */
     public void setDataPoints(List<Float> dataPoints, List<Date> dateList) {
         // Reverse the order of dataPoints and dateList
         Collections.reverse(dateList);
-
         this.dataPoints = dataPoints;
         this.dateList = dateList;
-        invalidate(); // Trigger onDraw
+        invalidate();
     }
-
-    public void setThemeColor(int color) {
-        this.themeColor = color;
-        invalidate(); // Trigger onDraw
-    }
-
 }

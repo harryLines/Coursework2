@@ -1,5 +1,6 @@
 package com.example.trailblazer;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
@@ -9,7 +10,7 @@ import java.util.List;
 @Dao
 public interface TripDao {
     @Query("SELECT * FROM trip_history")
-    List<Trip> loadTripHistory();
+    LiveData<List<Trip>> loadTripHistory();
     @Insert
     long addNewTrip(Trip trip);
     @Query("DELETE FROM trip_history")
