@@ -9,10 +9,13 @@ import androidx.fragment.app.Fragment;
 
 import com.example.trailblazer.R;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
 /**
  * An activity for managing and displaying various settings and preferences to the user.
  * This activity hosts a {@link SettingsFragment} to display and interact with settings options.
  */
+@AndroidEntryPoint
 public class SettingsActivity extends AppCompatActivity {
     /**
      * Called when the activity is first created. Sets the activity's theme, content view,

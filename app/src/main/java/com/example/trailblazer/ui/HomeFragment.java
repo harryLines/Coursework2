@@ -13,6 +13,7 @@ import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.trailblazer.R;
@@ -32,11 +33,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
 /**
  * The HomeFragment class is responsible for displaying and managing user's home screen.
  * It provides features like tracking walking, running, and cycling activities, displaying
  * average speeds, and showing weekly graphs for distance and calories.
  */
+@AndroidEntryPoint
 public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
     CheckBox checkboxWalking;
     CheckBox checkboxRunning;
@@ -48,8 +52,9 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
     TextView txtViewAvgCycleSpeed;
     WeeklyGraphView weeklyGraphView;
     HomeFragmentViewModel viewModel;
-    TripRepository tripRepository;
     HomeFragmentBinding binding;
+    private List<Trip> latestTripHistory = new ArrayList<>();
+
     private boolean prevWalkingChecked = true;
     private boolean prevRunningChecked = false;
     private boolean prevCyclingChecked = false;
@@ -88,7 +93,18 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
 
         // Create an instance of your ViewModel
         viewModel = new ViewModelProvider(this).get(HomeFragmentViewModel.class);
-        tripRepository = new TripRepository(DatabaseManager.getInstance(requireContext()).tripDao());
+        viewModel.getTripHistory().observe(getViewLifecycleOwner(), new Observer<List<Trip>>() {
+            @Override
+            public void onChanged(List<Trip> trips) {
+                // Update the UI with the new trip history
+                latestTripHistory = trips;
+                try {
+                    updateGraph(trips);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
         // Set the ViewModel to the binding
         binding.setViewModel(viewModel);
 
@@ -113,7 +129,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
         viewModel.isWalkingChecked().observe(getViewLifecycleOwner(), isChecked -> {
             try {
                 if (isChecked != prevWalkingChecked) {
-                    updateGraph();
+                    updateGraph(latestTripHistory);
                     prevWalkingChecked = isChecked;
                     if (isChecked) {
                         showToast("Walking is now enabled.");
@@ -129,7 +145,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
         viewModel.isRunningChecked().observe(getViewLifecycleOwner(), isChecked -> {
             try {
                 if (isChecked != prevRunningChecked) {
-                    updateGraph();
+                    updateGraph(latestTripHistory);
                     prevRunningChecked = isChecked;
                     if (isChecked) {
                         showToast("Running is now enabled.");
@@ -145,7 +161,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
         viewModel.isCyclingChecked().observe(getViewLifecycleOwner(), isChecked -> {
             try {
                 if (isChecked != prevCyclingChecked) {
-                    updateGraph();
+                    updateGraph(latestTripHistory);
                     prevCyclingChecked = isChecked;
                     if (isChecked) {
                         showToast("Cycling is now enabled.");
@@ -160,7 +176,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
 
         checkBoxDistance.setOnCheckedChangeListener((buttonView, isChecked) -> {
             try {
-                updateGraph();
+                updateGraph(latestTripHistory);
             } catch (ParseException e) {
                 throw new RuntimeException(e);
             }
@@ -168,7 +184,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
                 weeklyGraphView.setDataType(WeeklyGraphView.GRAPH_DATE_TYPE_DISTANCE);
                 viewModel.setCaloriesChecked(false);
                 try {
-                    updateGraph();
+                    updateGraph(latestTripHistory);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -178,7 +194,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
 
         checkboxCalories.setOnCheckedChangeListener((buttonView, isChecked) -> {
             try {
-                updateGraph();
+                updateGraph(latestTripHistory);
             } catch (ParseException e) {
                 throw new RuntimeException(e);
             }
@@ -186,7 +202,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
                 weeklyGraphView.setDataType(WeeklyGraphView.GRAPH_DATE_TYPE_CALORIES);
                 viewModel.setDistanceChecked(false);
                 try {
-                    updateGraph();
+                    updateGraph(latestTripHistory);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -197,7 +213,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
 
         // Initial update
         try {
-            updateGraph();
+            updateGraph(latestTripHistory);
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -237,7 +253,7 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
     public void onResume(@NonNull LifecycleOwner owner) {
         DefaultLifecycleObserver.super.onResume(owner);
         try {
-            updateGraph();
+            updateGraph(latestTripHistory);
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -311,10 +327,9 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
      *
      * @throws ParseException If there is an issue parsing date data.
      */
-    private void updateGraph() throws ParseException {
-        tripRepository.loadTripHistory().observe(getViewLifecycleOwner(), tripHistory -> {
+    private void updateGraph(List<Trip> trips) throws ParseException {
             // Since we are already on the UI thread, we don't need executors or handlers here
-            List<Trip> selectedTrips = filterTripsByMovementType(tripHistory);
+            List<Trip> selectedTrips = filterTripsByMovementType(trips);
 
             // Filter trips within the last week
             List<Trip> selectedTripsLastWeek = filterTripsLastWeek(selectedTrips);
@@ -349,7 +364,6 @@ public class HomeFragment extends Fragment implements DefaultLifecycleObserver{
                         getDateListLastWeek(selectedTrips)
                 );
             }
-        });
     }
 
     private boolean shouldIncludeTrip(Trip trip) {

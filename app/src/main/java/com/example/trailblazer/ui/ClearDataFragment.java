@@ -7,25 +7,26 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.trailblazer.R;
 import com.example.trailblazer.data.ReminderRepository;
 import com.example.trailblazer.data.SavedLocationRepository;
 import com.example.trailblazer.data.TripRepository;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
 
 /**
  * A Fragment used to display and handle the clearing of various data types from the database.
  * This includes clearing trip history, reminders, and saved locations.
  */
+@AndroidEntryPoint
 public class ClearDataFragment extends Fragment {
     Button clearTripHistory;
     Button clearReminders;
     Button clearSavedLocations;
-    TripRepository tripRepository;
-    SavedLocationRepository savedLocationRepository;
-    ReminderRepository reminderRepository;
-
+    ClearDataFragmentViewModel viewModel;
     /**
      * Default constructor for the ClearDataFragment.
      */
@@ -47,23 +48,19 @@ public class ClearDataFragment extends Fragment {
      */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.cleardata_fragment, container, false);
 
+        viewModel = new ViewModelProvider(this).get(ClearDataFragmentViewModel.class);
+
         clearTripHistory = view.findViewById(R.id.btnClearTripHistory);
-        clearTripHistory.setOnClickListener(v -> {
-            tripRepository.deleteTripHistory();
-        });
+        clearTripHistory.setOnClickListener(v -> viewModel.deleteTripHistory());
 
         clearReminders = view.findViewById(R.id.btnClearReminders);
-        clearReminders.setOnClickListener(v -> {
-            reminderRepository.deleteReminders();
-        });
+        clearReminders.setOnClickListener(v -> viewModel.deleteReminders());
 
         clearSavedLocations = view.findViewById(R.id.btnClearLocations);
-        clearSavedLocations.setOnClickListener(v -> {
-            savedLocationRepository.deleteSavedLocations();
-        });
+        clearSavedLocations.setOnClickListener(v -> viewModel.deleteSavedLocations());
+
         return view;
     }
 }

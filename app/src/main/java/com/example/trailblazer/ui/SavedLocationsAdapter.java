@@ -21,7 +21,6 @@ import com.example.trailblazer.data.DatabaseManager;
 import com.example.trailblazer.data.Reminder;
 import com.example.trailblazer.data.ReminderRepository;
 import com.example.trailblazer.data.SavedLocation;
-import com.example.trailblazer.data.SavedLocationRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +31,6 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
     private final List<SavedLocation> savedLocations;
     private final Context context;
     private final LifecycleOwner lifecycleOwner;
-    private SavedLocationRepository savedLocationRepository;
     private ReminderRepository reminderRepository;
 
     /**
@@ -41,12 +39,17 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
      * @param savedLocations The list of saved locations to be displayed.
      * @param context        The context associated with the adapter.
      */
-    public SavedLocationsAdapter(List<SavedLocation> savedLocations, Context context, LifecycleOwner lifecycleOwner) {
-        this.savedLocations = savedLocations;
+    public SavedLocationsAdapter(List<SavedLocation> savedLocations, Context context,
+                                 LifecycleOwner lifecycleOwner) {
         this.context = context;
         this.lifecycleOwner = lifecycleOwner;
-        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(context).savedLocationDao());
-        reminderRepository = new ReminderRepository(DatabaseManager.getInstance(context).reminderDao());
+        this.savedLocations = savedLocations;
+    }
+
+    public void updateData(List<SavedLocation> newSavedLocations) {
+        this.savedLocations.clear();
+        this.savedLocations.addAll(newSavedLocations);
+        notifyDataSetChanged(); // Notify the adapter of the data change
     }
 
     /**
@@ -60,7 +63,6 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_saved_location, parent, false);
-        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(context).savedLocationDao());
         reminderRepository = new ReminderRepository(DatabaseManager.getInstance(context).reminderDao());
         return new ViewHolder(view);
     }
@@ -161,7 +163,10 @@ public class SavedLocationsAdapter extends RecyclerView.Adapter<SavedLocationsAd
 
     @Override
     public int getItemCount() {
-        return savedLocations.size();
+        if(savedLocations != null) {
+            return savedLocations.size();
+        }
+        return 0;
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

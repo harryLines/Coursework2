@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.inject.Inject;
+
 /**
  * Repository for managing Goal entities.
  */
@@ -22,6 +24,7 @@ public class GoalRepository {
      *
      * @param goalDao DAO for accessing goal data.
      */
+    @Inject
     public GoalRepository(GoalDao goalDao) {
         this.goalDao = goalDao;
         this.executor = Executors.newSingleThreadExecutor();

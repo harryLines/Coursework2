@@ -11,12 +11,17 @@ import com.example.trailblazer.data.GoalRepository;
 
 import java.util.List;
 
-public class GoalsFragmentViewModel extends ViewModel {
-    private GoalRepository goalRepository;
-    private LiveData<List<Goal>> goalsLiveData;
+import javax.inject.Inject;
 
-    public GoalsFragmentViewModel() {
-        goalRepository = new GoalRepository(DatabaseManager.getInstance(getApplication()).goalDao());
+import dagger.hilt.android.lifecycle.HiltViewModel;
+
+@HiltViewModel
+public class GoalsFragmentViewModel extends ViewModel {
+    private final GoalRepository goalRepository;
+    private LiveData<List<Goal>> goalsLiveData;
+    @Inject
+    public GoalsFragmentViewModel(GoalRepository goalRepository) {
+        this.goalRepository = goalRepository;
         goalsLiveData = goalRepository.loadGoals();
     }
 

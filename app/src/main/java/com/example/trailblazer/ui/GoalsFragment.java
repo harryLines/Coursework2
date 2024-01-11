@@ -30,13 +30,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
 /**
  * The GoalsFragment class is responsible for displaying and managing user goals.
  * It allows users to add new goals, view existing goals, and filter completed goals.
  */
+@AndroidEntryPoint
 public class GoalsFragment extends Fragment implements DefaultLifecycleObserver {
     private GoalsFragmentViewModel viewModel;
-    private GoalRepository goalRepository;
     private GoalsFragmentBinding binding;
     private Button btnAddGoal;
 
@@ -52,11 +54,10 @@ public class GoalsFragment extends Fragment implements DefaultLifecycleObserver 
         binding = DataBindingUtil.inflate(inflater, R.layout.goals_fragment, container, false);
         viewModel = new ViewModelProvider(this).get(GoalsFragmentViewModel.class);
         btnAddGoal = binding.btnCreateGoal;
-        goalRepository = new GoalRepository(DatabaseManager.getInstance(requireContext()).goalDao());
+        viewModel = new ViewModelProvider(this).get(GoalsFragmentViewModel.class);
         // Bind the ViewModel to the layout
         binding.setViewModel(viewModel);
         binding.setLifecycleOwner(this);
-
         setupGoalsList();
 
         return binding.getRoot();
@@ -160,17 +161,7 @@ public class GoalsFragment extends Fragment implements DefaultLifecycleObserver 
             // Define the desired date format
             Goal newGoal = new Goal(metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
 
-            goalRepository.addNewGoal(newGoal, new GoalRepository.GoalInsertCallback() {
-                @Override
-                public void onGoalInserted(long goalId) {
-                    //Goal successfully Inserted
-                }
-
-                @Override
-                public void onInsertFailed() {
-                    Log.d("ERROR","Failed To Insert Goal");
-                }
-            });
+            viewModel.addNewGoal(newGoal);
         });
 
         // Set up the negative button (Cancel)

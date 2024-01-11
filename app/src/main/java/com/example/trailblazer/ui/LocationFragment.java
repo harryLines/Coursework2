@@ -15,11 +15,13 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.trailblazer.R;
 import com.example.trailblazer.data.DatabaseManager;
+import com.example.trailblazer.data.ReminderRepository;
 import com.example.trailblazer.data.SavedLocation;
 import com.example.trailblazer.data.SavedLocationRepository;
 import com.google.android.gms.common.api.ApiException;
@@ -37,17 +39,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
 /**
  * The LocationFragment class manages the user's location-related activities and provides features
  * for searching, saving, and displaying locations.
  */
+@AndroidEntryPoint
 public class LocationFragment extends Fragment {
-
     private AutoCompleteTextView autoCompleteTextView;
     private SavedLocationsAdapter savedLocationsAdapter;
     private List<SavedLocation> savedLocations;
-    SavedLocationRepository savedLocationRepository;
+    private LocationFragmentViewModel viewModel;
     private PlacesClient placesClient;
+    @Inject
+    SavedLocationRepository savedLocationRepository;
+
+    @Inject
+    ReminderRepository reminderRepository;
     View view;
     public LocationFragment() {
     }
@@ -58,17 +69,12 @@ public class LocationFragment extends Fragment {
         autoCompleteTextView = view.findViewById(R.id.autoCompleteTextView);
         RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
 
-        savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(requireContext()).savedLocationDao());
+        viewModel = new ViewModelProvider(this).get(LocationFragmentViewModel.class);
+        viewModel.getSavedLocations().observe(getViewLifecycleOwner(), this::setupAdapter);
 
-        // Initialize RecyclerView and adapter
+        observeSavedLocations();
+
         recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
-
-        // Observe LiveData from the repository
-        savedLocationRepository.loadSavedLocations().observe(getViewLifecycleOwner(), savedLocations -> {
-            // Update the UI when the data changes
-            savedLocationsAdapter = new SavedLocationsAdapter(savedLocations, getContext(),getViewLifecycleOwner());
-            recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
-        });
 
         // Initialize the Places API
         Places.initialize(requireContext(), getString(R.string.google_maps_api_key));
@@ -82,17 +88,30 @@ public class LocationFragment extends Fragment {
         autoCompleteTextView.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Fetch location suggestions based on the current text in autoCompleteTextView
-                getPlaceSuggestions(s.toString());
+                viewModel.fetchPlaceSuggestions(s.toString());
             }
+        });
+
+        viewModel.getPlaceSuggestions().observe(getViewLifecycleOwner(), suggestions -> {
+            adapter.clear();
+            adapter.addAll(suggestions);
+            adapter.notifyDataSetChanged();
         });
 
         Button btnSaveLocation = view.findViewById(R.id.btnSaveLocation);
         btnSaveLocation.setOnClickListener(v -> showSaveLocationDialog());
-
         return view;
     }
 
+    private void setupAdapter(List<SavedLocation> locations) {
+        if (savedLocationsAdapter == null) {
+            savedLocationsAdapter = new SavedLocationsAdapter(locations, getContext(), this);
+            RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
+            recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
+        } else {
+            savedLocationsAdapter.updateData(locations); // Update adapter data
+        }
+    }
 
     /**
      * Show a dialog for saving a new location with a custom name.
@@ -114,7 +133,6 @@ public class LocationFragment extends Fragment {
             if (!locationName.isEmpty()) {
                 // Get the selected location from the AutoCompleteTextView
                 String selectedLocation = autoCompleteTextView.getText().toString();
-
                 // Use the selected location to get LatLng using the Places API
                 getLatLngForLocation(selectedLocation, locationName);
             } else {
@@ -122,12 +140,15 @@ public class LocationFragment extends Fragment {
             }
         });
 
-
         // Set up the negative button (Cancel)
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
 
         // Show the dialog
         builder.create().show();
+    }
+
+    private void observeSavedLocations() {
+        viewModel.getSavedLocations().observe(getViewLifecycleOwner(), this::setupAdapter);
     }
 
     /**
@@ -137,7 +158,6 @@ public class LocationFragment extends Fragment {
      * @param placeName     The name of the selected place.
      * @param locationName  The custom name for the saved location.
      */
-    @SuppressLint("NotifyDataSetChanged")
     private void getLatLngForLocation(String placeName, String locationName) {
         // Use the Places API to get details for the selected place
         AutocompleteSessionToken token = AutocompleteSessionToken.newInstance();
@@ -159,23 +179,11 @@ public class LocationFragment extends Fragment {
                     Place place = fetchPlaceResponse.getPlace();
                     LatLng selectedLatLng = place.getLatLng();
 
-                    // Create a new SavedLocation instance
-                    assert selectedLatLng != null;
-                    // Create a new SavedLocation instance with the locationId
-                    SavedLocation newLocation = new SavedLocation(locationName, selectedLatLng);
-                    savedLocationRepository.addNewLocation(newLocation,null);
+                    // Add new location
+                    viewModel.addNewLocation(locationName, selectedLatLng);
 
-                    savedLocationRepository.loadSavedLocations().observe(getViewLifecycleOwner(), savedLocations -> {
-                        // Update the UI when the data changes
-                        if (savedLocationsAdapter == null) {
-                            savedLocationsAdapter = new SavedLocationsAdapter(savedLocations, getContext(),getViewLifecycleOwner());
-                            RecyclerView recyclerViewSavedLocations = view.findViewById(R.id.savedLocationsRecyclerView);
-                            recyclerViewSavedLocations.setLayoutManager(new LinearLayoutManager(requireContext()));
-                            recyclerViewSavedLocations.setAdapter(savedLocationsAdapter);
-                        } else {
-                            savedLocationsAdapter.notifyDataSetChanged(); // Notify adapter of dataset change
-                        }
-                    });
+                    // Re-observe LiveData to get the updated list of saved locations
+                    observeSavedLocations();
                 }).addOnFailureListener(exception -> {
                     if (exception instanceof ApiException) {
                         ApiException apiException = (ApiException) exception;
