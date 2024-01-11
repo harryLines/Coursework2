@@ -2,8 +2,7 @@ package com.example.trailblazer;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,15 +15,12 @@ import android.widget.Spinner;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.trailblazer.databinding.GoalsFragmentBinding;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * The GoalsFragment class is responsible for displaying and managing user goals.
@@ -167,7 +163,17 @@ public class GoalsFragment extends Fragment {
             // Define the desired date format
             Goal newGoal = new Goal(metricType[0],numOfTimeframes,timeframeType[0],0,target,currentDate);
 
-            goalRepository.addNewGoal(newGoal,null);
+            goalRepository.addNewGoal(newGoal, new GoalRepository.GoalInsertCallback() {
+                @Override
+                public void onGoalInserted(long goalId) {
+                    //Goal successfully Inserted
+                }
+
+                @Override
+                public void onInsertFailed() {
+                    Log.d("ERROR","Failed To Insert Goal");
+                }
+            });
         });
 
         // Set up the negative button (Cancel)

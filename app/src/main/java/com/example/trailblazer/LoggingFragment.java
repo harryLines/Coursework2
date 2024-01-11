@@ -12,9 +12,8 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,8 +49,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * A Fragment class responsible for logging walking, running, and cycling.
@@ -310,53 +307,15 @@ public class LoggingFragment extends Fragment {
     }
 
     /**
-     * Updates the progress of fitness goals based on activity data.
-     *
-     * @param currentGoals      The list of current fitness goals.
-     * @param burnedCalories    The number of calories burned during the activity.
-     * @param distanceCovered   The distance covered during the activity.
-     * @param stepsTaken        The number of steps taken during the activity.
-     * @return The updated list of fitness goals.
-     */
-    private List<Goal> updateProgress(List<Goal> currentGoals, double burnedCalories, double distanceCovered, int stepsTaken) {
-        if (currentGoals != null) {
-
-            // Iterate through the goals and update them
-            for (Goal goal : currentGoals) {
-                switch (goal.getMetricType()) {
-                    case Goal.METRIC_CALORIES:
-                        goal.setProgress(goal.getProgress() + burnedCalories);
-                        break;
-                    case Goal.METRIC_KILOMETERS:
-                        goal.setProgress(goal.getProgress() + distanceCovered);
-                        break;
-                    case Goal.METRIC_STEPS:
-                        goal.setProgress(goal.getProgress() + stepsTaken);
-                        break;
-                    default:
-                }
-                if (goal.getProgress() >= goal.getTarget()) {
-                    goal.setComplete();
-                }
-            }
-        }
-        return currentGoals;
-    }
-
-    /**
      * Updates the stored fitness goals based on activity data.
      * Called when tracking is stopped.
      */
     private void updateGoals() {
         double burnedCalories = viewModel.getCalories().getValue();
-        double distanceCovered = viewModel.getDistance().getValue(); // Assuming distance is the metric for kilometers goal
+        double distanceCovered = viewModel.getDistance().getValue();
         int stepsTaken = viewModel.getSteps().getValue();
 
-        // Use the repository to load and update goals
-        goalRepository.loadGoals().observe(getViewLifecycleOwner(), currentGoals -> {
-            updateProgress(currentGoals, burnedCalories, distanceCovered, stepsTaken);
-            goalRepository.updateGoals(currentGoals);
-        });
+        goalRepository.loadAndUpdateGoals(burnedCalories,distanceCovered,stepsTaken);
     }
 
     /**

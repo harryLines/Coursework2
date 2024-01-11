@@ -16,6 +16,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -57,8 +58,9 @@ public class Provider extends ContentProvider {
         switch (match) {
             case GOALS:
                 cursor = new MatrixCursor(new String[]{"metric_type","number_of_timeframes","timeframe_type","progress","target","date_created","is_complete"});
-                List<Goal> goals = goalRepository.loadGoals().getValue(); // Implement this method according to your data source.
-                assert goals != null;
+                List<Goal> goals = new ArrayList<>();
+                List<Goal> finalGoals = goals;
+                goals = goalRepository.loadGoals().getValue(); // Implement this method according to your data source.
                 for (Goal goal : goals) {
                     cursor.addRow(new Object[]{goal.getMetricType(), goal.getNumberOfTimeframes(), goal.getTimeframeType(), goal.getProgress(), goal.getTarget(), goal.getDateCreated(), goal.isComplete});
                 }

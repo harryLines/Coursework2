@@ -8,6 +8,9 @@ import android.widget.Button;
 
 import androidx.fragment.app.Fragment;
 
+import javax.inject.Inject;
+
+
 /**
  * A Fragment used to display and handle the clearing of various data types from the database.
  * This includes clearing trip history, reminders, and saved locations.
@@ -16,7 +19,9 @@ public class ClearDataFragment extends Fragment {
     Button clearTripHistory;
     Button clearReminders;
     Button clearSavedLocations;
-    DatabaseManager dbManager;
+    TripRepository tripRepository;
+    SavedLocationRepository savedLocationRepository;
+    ReminderRepository reminderRepository;
 
     /**
      * Default constructor for the ClearDataFragment.
@@ -41,32 +46,20 @@ public class ClearDataFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.cleardata_fragment, container, false);
-        Database database = DatabaseManager.getInstance(requireContext());
-
-        TripDao tripDao = database.tripDao();
-        ReminderDao reminderDao = database.reminderDao();
-        SavedLocationDao savedLocationDao = database.savedLocationDao();
 
         clearTripHistory = view.findViewById(R.id.btnClearTripHistory);
         clearTripHistory.setOnClickListener(v -> {
-            // Use the injected DatabaseManager
-            if (dbManager != null) {
-                tripDao.deleteTripHistory();
-            }
+            tripRepository.deleteTripHistory();
         });
 
         clearReminders = view.findViewById(R.id.btnClearReminders);
         clearReminders.setOnClickListener(v -> {
-            if (dbManager != null) {
-                reminderDao.deleteReminders();
-            }
+            reminderRepository.deleteReminders();
         });
 
         clearSavedLocations = view.findViewById(R.id.btnClearLocations);
         clearSavedLocations.setOnClickListener(v -> {
-            if (dbManager != null) {
-                savedLocationDao.deleteSavedLocations();
-            }
+            savedLocationRepository.deleteSavedLocations();
         });
         return view;
     }

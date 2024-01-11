@@ -12,6 +12,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.bumptech.glide.Glide;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,6 +24,13 @@ import java.util.List;
 import java.util.Locale;
 
 class TripAdapter extends ArrayAdapter<Trip> {
+    private static class ViewHolder {
+        TextView dateTextView;
+        TextView distanceTextView;
+        TextView movementTypeTextView;
+        ImageView tripImage;
+        ImageView weatherIcon;
+    }
     private final int resource;
 
     /**
@@ -36,87 +45,47 @@ class TripAdapter extends ArrayAdapter<Trip> {
         this.resource = resource;
     }
 
-    /**
-     * Provides a view for an AdapterView (ListView, GridView, etc.)
-     *
-     * @param position The position of the item within the adapter's data set of the item whose view we want.
-     * @param convertView The old view to reuse, if possible.
-     * @param parent The parent that this view will eventually be attached to.
-     * @return A View corresponding to the data at the specified position.
-     */
     @NonNull
     @Override
     public View getView(int position, View convertView, @NonNull ViewGroup parent) {
-        View view = convertView;
+        ViewHolder holder;
 
-        if (view == null) {
+        if (convertView == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
-            view = inflater.inflate(resource, null);
+            convertView = inflater.inflate(resource, parent, false);
+            holder = new ViewHolder();
+            holder.dateTextView = convertView.findViewById(R.id.textViewDate);
+            holder.distanceTextView = convertView.findViewById(R.id.textViewDistance);
+            holder.movementTypeTextView = convertView.findViewById(R.id.textViewMovementType);
+            holder.tripImage = convertView.findViewById(R.id.imageView);
+            holder.weatherIcon = convertView.findViewById(R.id.imageViewWeatherIcon);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
         }
 
         Trip trip = getItem(position);
-
         if (trip != null) {
-            // Populate the views with data from the Trip object
-            TextView dateTextView = view.findViewById(R.id.textViewDate);
-            TextView distanceTextView = view.findViewById(R.id.textViewDistance);
-            TextView movementTypeTextView = view.findViewById(R.id.textViewMovementType);
-            ImageView tripImage = view.findViewById(R.id.imageView);
-            ImageView weatherIcon = view.findViewById(R.id.imageViewWeatherIcon);
-
-            // Format the date as "dayOfMonth Month [Year]" or "dayOfMonth Month" (if it's the current year)
             SimpleDateFormat outputFormatWithYear = new SimpleDateFormat("d MMMM yyyy", Locale.getDefault());
             SimpleDateFormat outputFormatWithoutYear = new SimpleDateFormat("d MMMM", Locale.getDefault());
+            String formattedDate = isCurrentYear(trip.getDate()) ? outputFormatWithoutYear.format(trip.getDate()) : outputFormatWithYear.format(trip.getDate());
 
-            String formattedDate;
-            if (isCurrentYear(trip.getDate())) {
-                formattedDate = outputFormatWithoutYear.format(trip.getDate());
-            } else {
-                formattedDate = outputFormatWithYear.format(trip.getDate());
-            }
+            holder.dateTextView.setText(formattedDate);
+            holder.distanceTextView.setText(String.format(Locale.UK, "%.2f meters", trip.getDistance()));
+            holder.movementTypeTextView.setText(getMovementTypeString(trip.getMovementType()));
+            holder.weatherIcon.setImageResource(getWeatherIconResourceId(trip.getWeather()));
+            holder.weatherIcon.setVisibility(getWeatherIconResourceId(trip.getWeather()) != -1 ? View.VISIBLE : View.GONE);
 
-            dateTextView.setText(formattedDate);
-            distanceTextView.setText(String.format(Locale.UK, "%.2f meters", trip.getDistance()));
-            movementTypeTextView.setText(getMovementTypeString(trip.getMovementType()));
-
-            int weatherIconResourceId = getWeatherIconResourceId(trip.getWeather());
-            if (weatherIconResourceId != -1) {
-                weatherIcon.setImageResource(weatherIconResourceId);
-                weatherIcon.setVisibility(View.VISIBLE);
-            } else {
-                weatherIcon.setVisibility(View.GONE);
-            }
-
-            String imagePath = trip.getImage(); // Assuming this returns the file path of the image
-
+            String imagePath = trip.getImage();
             if (imagePath != null) {
-                try {
-                    File imageFile = new File(imagePath);
-                    FileInputStream fis = new FileInputStream(imageFile);
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    byte[] buffer = new byte[1024];
-
-                    int bytesRead;
-                    while ((bytesRead = fis.read(buffer)) != -1) {
-                        bos.write(buffer, 0, bytesRead);
-                    }
-
-                    byte[] imageBytes = bos.toByteArray();
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                    tripImage.setImageBitmap(bitmap);
-
-                    fis.close();
-                    bos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    // Handle the IOException
-                }
+                Glide.with(getContext()).load(new File(imagePath)).into(holder.tripImage);
+                holder.tripImage.setVisibility(View.VISIBLE);
             } else {
-                tripImage.setVisibility(View.GONE);
-                // Handle the case where imagePath is null (no image available)
+                holder.tripImage.setVisibility(View.GONE);
             }
         }
-        return view;
+
+        return convertView;
     }
 
     /**

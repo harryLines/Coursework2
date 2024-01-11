@@ -27,8 +27,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * The HomeFragment class is responsible for displaying and managing user's home screen.
@@ -46,11 +44,11 @@ public class HomeFragment extends Fragment {
     TextView txtViewAvgCycleSpeed;
     WeeklyGraphView weeklyGraphView;
     HomeFragmentViewModel viewModel;
+    TripRepository tripRepository;
     HomeFragmentBinding binding;
     private boolean prevWalkingChecked = true;
     private boolean prevRunningChecked = false;
     private boolean prevCyclingChecked = false;
-    private TripRepository tripRepository;
     public HomeFragment() {
     }
 
@@ -83,11 +81,10 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = DataBindingUtil.inflate(inflater, R.layout.home_fragment, container, false);
-        tripRepository = new TripRepository(DatabaseManager.getInstance(requireContext()).tripDao());
 
         // Create an instance of your ViewModel
         viewModel = new ViewModelProvider(this).get(HomeFragmentViewModel.class);
-
+        tripRepository = new TripRepository(DatabaseManager.getInstance(requireContext()).tripDao());
         // Set the ViewModel to the binding
         binding.setViewModel(viewModel);
 
@@ -158,6 +155,11 @@ public class HomeFragment extends Fragment {
         });
 
         checkBoxDistance.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            try {
+                updateGraph();
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
             if (isChecked && Boolean.FALSE.equals(viewModel.isDistanceChecked().getValue())) {
                 weeklyGraphView.setDataType(WeeklyGraphView.GRAPH_DATE_TYPE_DISTANCE);
                 viewModel.setCaloriesChecked(false);
@@ -171,6 +173,11 @@ public class HomeFragment extends Fragment {
         });
 
         checkboxCalories.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            try {
+                updateGraph();
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
             if (isChecked && Boolean.FALSE.equals(viewModel.isCaloriesChecked().getValue())) {
                 weeklyGraphView.setDataType(WeeklyGraphView.GRAPH_DATE_TYPE_CALORIES);
                 viewModel.setDistanceChecked(false);
@@ -253,13 +260,13 @@ public class HomeFragment extends Fragment {
     /**
      * Calculates the distance covered by trips for each day and stores the result in a map.
      *
-     * @param walkingTrips The list of walking trips to calculate distances for.
+     * @param trips The list of walking trips to calculate distances for.
      * @return A map containing daily distances.
      */
-    public Map<String, Double> calculateDistanceByDay(List<Trip> walkingTrips) {
+    public Map<String, Double> calculateDistanceByDay(List<Trip> trips) {
         Map<String, Double> walkingDistanceByDay = new TreeMap<>(); // TreeMap for sorting by day
 
-        for (Trip trip : walkingTrips) {
+        for (Trip trip : trips) {
             String day = getDayFromDate(trip.getDate());
             double distance = trip.getDistance();
 
@@ -305,27 +312,6 @@ public class HomeFragment extends Fragment {
             // Since we are already on the UI thread, we don't need executors or handlers here
             List<Trip> selectedTrips = filterTripsByMovementType(tripHistory);
 
-            // Filter the trips based on checkbox selections
-            for (Trip trip : tripHistory) {
-                switch (trip.getMovementType()) {
-                    case Trip.MOVEMENT_WALK:
-                        if (Boolean.TRUE.equals(viewModel.isWalkingChecked().getValue())) {
-                            selectedTrips.add(trip);
-                        }
-                        break;
-                    case Trip.MOVEMENT_RUN:
-                        if (Boolean.TRUE.equals(viewModel.isRunningChecked().getValue())) {
-                            selectedTrips.add(trip);
-                        }
-                        break;
-                    case Trip.MOVEMENT_CYCLE:
-                        if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
-                            selectedTrips.add(trip);
-                        }
-                        break;
-                }
-            }
-
             // Filter trips within the last week
             List<Trip> selectedTripsLastWeek = filterTripsLastWeek(selectedTrips);
 
@@ -344,22 +330,21 @@ public class HomeFragment extends Fragment {
             if (Boolean.TRUE.equals(viewModel.isCyclingChecked().getValue())) {
                 selectedMovementTypes.add("Cycling");
             }
-            if (checkBoxDistance.isChecked()) {
-                // Summarize distance and time for selected trips by day
+            if (checkBoxDistance.isChecked() && !checkboxCalories.isChecked()) {
+                // Only display distance data
                 Map<String, Double> distanceByDay = calculateDistanceByDay(selectedTrips);
                 weeklyGraphView.setDataPoints(
                         convertMapToList(distanceByDay),
                         getDateListLastWeek(selectedTrips)
                 );
-            } else {
-                // Summarize calorie values for selected trips by day
+            } else if (checkboxCalories.isChecked() && !checkBoxDistance.isChecked()) {
+                // Only display calorie data
                 Map<String, Double> caloriesByDay = calculateCaloriesByDay(selectedTrips);
                 weeklyGraphView.setDataPoints(
                         convertMapToList(caloriesByDay),
                         getDateListLastWeek(selectedTrips)
                 );
             }
-
         });
     }
 

@@ -21,6 +21,7 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.lifecycle.Observer;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -35,10 +36,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MovementTrackerService extends Service implements StepDetector.StepListener {
+public class MovementTrackerService extends Service implements StepDetector.StepListener, MovementUpdateListener {
     public static final String ACTION_DISTANCE_UPDATE = "com.example.coursework2.ACTION_DISTANCE_UPDATE";
-    private static final long MIN_ROUTEPOINTS_UPDATE_INTERVAL = 60000;
-    private static final long MIN_ELEVATION_UPDATE_INTERVAL = 30000;
     private static final int NOTIFICATION_ID = 1;
     private String savedLocationName = "NULL";
     private String previousSavedLocationName = "NULL";
@@ -46,11 +45,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private static final String CHANNEL_ID = "Movement Tracker Channel";
     private List<SavedLocation> savedLocations;
     private static final String TAG = MovementTrackerService.class.getSimpleName();
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
     private int movementType = -1;
-    private Location lastLocation;
-    private double totalDistance = 0.0;
     private int caloriesBurned = 0;
     private float weight = 0;
     private long startTimeMillis;
@@ -60,14 +55,12 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     SensorManager sensorManager;
     private StepDetector stepDetector;
     Sensor accelerometerSensor;
-    private List<LatLng> routePoints;
     private List<Double> elevationData;
-    private long lastLocationPointTime;
-    private long lastElevationDataTime;
     private static int currentWeather = -1;
     private static String currentImage;
     TripRepository tripRepository;
     SavedLocationRepository savedLocationRepository;
+    GPSRepository locationRepository;
 
     /**
      * Called when the service is first created. Initializes sensor management, step detection,
@@ -76,7 +69,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     @Override
     public void onCreate() {
         super.onCreate();
-
+        locationRepository = new GPSRepository(getApplicationContext());
+        locationRepository.setMovementUpdateListener(this);
         // Initialize sensorManager
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager == null) {
@@ -101,24 +95,21 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // Register the sensor event listener
         sensorManager.registerListener(stepDetector, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
-        initLocationUpdates();
+        locationRepository.initLocationUpdates();
         tripRepository = new TripRepository(DatabaseManager.getInstance(getApplicationContext()).tripDao());
         savedLocationRepository = new SavedLocationRepository(DatabaseManager.getInstance(getApplicationContext()).savedLocationDao());
-        loadSavedLocations();
 
         startTimeMillis = System.currentTimeMillis();
         timerHandler = new Handler(Looper.getMainLooper());
         // Remove the following line since stepDetector is now initialized before this
         // stepDetector = new StepDetector(this);
-        routePoints = new ArrayList<>();
+        locationRepository.routePoints = new ArrayList<>();
         elevationData = new ArrayList<>();
         // Retrieve the user's weight from SharedPreferences
         SharedPreferences sharedPreferences = getSharedPreferences("user_details", Context.MODE_PRIVATE);
         weight = sharedPreferences.getFloat("weight", 0.0f);
-        lastLocationPointTime = 0;
-        lastElevationDataTime = 0;
         initTimerRunnable();
-        startLocationUpdates();
+        locationRepository.startLocationUpdates();
     }
 
     public static void updateImage(String image) {
@@ -141,7 +132,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     private int calculateCaloriesBurned() {
         double MET;
         double elapsedTimeInHours = (double) elapsedMillis / 3600000;
-        double currentSpeedKMPH = (totalDistance / 1000) / elapsedTimeInHours;
+        double currentSpeedKMPH = (locationRepository.totalDistance / 1000) / elapsedTimeInHours;
 
         if (movementType != Trip.MOVEMENT_CYCLE) {
             if (currentSpeedKMPH <= 2.7) {
@@ -172,10 +163,8 @@ public class MovementTrackerService extends Service implements StepDetector.Step
                 MET = 12.0;
             }
         }
-
         return (int) (MET * weight * elapsedTimeInHours);
     }
-
 
     private void initTimerRunnable() {
         timerRunnable = new Runnable() {
@@ -252,7 +241,7 @@ public class MovementTrackerService extends Service implements StepDetector.Step
     public void onDestroy() {
         super.onDestroy();
         stopForeground(true);
-        stopLocationUpdates();
+        locationRepository.stopLocationUpdates();
         timerHandler.removeCallbacks(timerRunnable);
         sensorManager.unregisterListener(stepDetector);
         saveTripToDatabase();
@@ -267,98 +256,13 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         // Create a new Trip instance with the required data
         Trip trip = new Trip(
                 new Date(),
-                totalDistance,
+                locationRepository.totalDistance,
                 movementType,
                 elapsedMillis / 1000,
-                routePoints, elevationData, caloriesBurned, currentWeather, currentImage);
+                locationRepository.routePoints, elevationData, caloriesBurned, currentWeather, currentImage);
 
         // Use the repository to add a new trip
         tripRepository.addNewTrip(trip,null);
-    }
-
-
-    /**
-     * Initializes location updates, including the location client and location callback.
-     */
-    private void initLocationUpdates() {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) {
-                    return;
-                }
-
-                for (Location location : locationResult.getLocations()) {
-                    // Handle the location update, e.g., calculate distance
-                    calculateDistance(location);
-                    lastLocation = location;
-                }
-            }
-        };
-    }
-
-    /**
-     * Starts location updates if location permission is granted. Sets the update interval for
-     * receiving location updates.
-     */
-    private void startLocationUpdates() {
-        // Check for location permission
-        if (ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-            LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
-                    .setWaitForAccurateLocation(false)
-                    .setMinUpdateIntervalMillis(5000)
-                    .build();
-
-            fusedLocationClient.requestLocationUpdates(
-                    locationRequest, locationCallback, null);
-        } else {
-            Log.e(TAG, "Location permission not granted");
-        }
-    }
-
-    /**
-     * Stops location updates.
-     */
-    private void stopLocationUpdates() {
-        fusedLocationClient.removeLocationUpdates(locationCallback);
-    }
-
-    /**
-     * Calculates and updates the total distance traveled, checks for elevation data updates,
-     * and broadcasts movement updates.
-     *
-     * @param newLocation The new Location object representing the current location.
-     */
-    private void calculateDistance(Location newLocation) {
-        if (lastLocation != null) {
-            double distance = calculateHaversineDistance(
-                    lastLocation.getLatitude(), lastLocation.getLongitude(),
-                    newLocation.getLatitude(), newLocation.getLongitude());
-
-            totalDistance += distance;
-
-            // Check if enough time has passed since the last elevation data update
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastElevationDataTime >= MIN_ELEVATION_UPDATE_INTERVAL) {
-                caloriesBurned = calculateCaloriesBurned();
-                // Add the obtained elevation to the elevation data list
-                addElevationForLocation(newLocation);
-                lastElevationDataTime = currentTime;
-            }
-
-            // Check if enough time has passed since the last route point update
-            if (currentTime - lastLocationPointTime >= MIN_ROUTEPOINTS_UPDATE_INTERVAL) {
-                // Add the new LatLng point to the list
-                routePoints.add(new LatLng(newLocation.getLatitude(), newLocation.getLongitude()));
-                lastLocationPointTime = currentTime;
-            }
-
-            sendMovementUpdateBroadcast(totalDistance, newLocation);
-        }
     }
 
     /**
@@ -391,30 +295,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
         });
     }
 
-    /**
-     * Calculates the distance between two locations using the Haversine formula.
-     *
-     * @param startLat Starting latitude.
-     * @param startLng Starting longitude.
-     * @param endLat   Ending latitude.
-     * @param endLng   Ending longitude.
-     * @return The calculated distance in meters.
-     */
-    private double calculateHaversineDistance(double startLat, double startLng, double endLat, double endLng) {
-        double R = 6371;
-
-        double dLat = Math.toRadians(endLat - startLat);
-        double dLng = Math.toRadians(endLng - startLng);
-
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(startLat)) * Math.cos(Math.toRadians(endLat)) *
-                        Math.sin(dLng / 2) * Math.sin(dLng / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c * 1000;
-    }
-
     @Override
     public IBinder onBind(Intent intent) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -428,51 +308,59 @@ public class MovementTrackerService extends Service implements StepDetector.Step
      * @param currentLocation The current location of the user.
      */
     private void sendMovementUpdateBroadcast(double distance, Location currentLocation) {
-        Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
+        caloriesBurned = calculateCaloriesBurned();
+        addElevationForLocation(currentLocation);
+        savedLocationRepository.loadSavedLocations().observeForever(new Observer<List<SavedLocation>>() {
+            Intent intent = new Intent(ACTION_DISTANCE_UPDATE);
+            boolean locationNameChanged = false;
+            @Override
+            public void onChanged(List<SavedLocation> locations) {
+                savedLocations = locations;
 
-        boolean locationNameChanged = false;
-        if(savedLocations != null) {
-            for (SavedLocation savedLocation : savedLocations) {
-                double savedLat = savedLocation.getLatLng().latitude;
-                double savedLng = savedLocation.getLatLng().longitude;
-                double distanceToSavedLocation = calculateHaversineDistance(
-                        currentLocation.getLatitude(), currentLocation.getLongitude(),
-                        savedLat, savedLng);
-                // Check proximity
-                if (distanceToSavedLocation < 100) {
-                    if (!savedLocation.isEntered()) {
-                        savedLocationName = savedLocation.getName();
-                        savedLocation.setEntered(true);
-                        locationNameChanged = true;
-                        // Set intent extras
-                        foundCloseLocation = true;
-                        break;
+                if(savedLocations != null) {
+                    for (SavedLocation savedLocation : savedLocations) {
+                        double savedLat = savedLocation.getLatLng().latitude;
+                        double savedLng = savedLocation.getLatLng().longitude;
+                        double distanceToSavedLocation = locationRepository.calculateHaversineDistance(
+                                currentLocation.getLatitude(), currentLocation.getLongitude(),
+                                savedLat, savedLng);
+                        // Check proximity
+                        if (distanceToSavedLocation < 100) {
+                            if (!savedLocation.isEntered()) {
+                                savedLocationName = savedLocation.getName();
+                                savedLocation.setEntered(true);
+                                locationNameChanged = true;
+                                // Set intent extras
+                                foundCloseLocation = true;
+                                break;
+                            }
+                            intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
+                        } else {
+                            foundCloseLocation = false;
+                        }
                     }
-                    intent.putExtra("savedLocationReminders", savedLocation.getRemindersAsString());
-                } else {
-                    foundCloseLocation = false;
+
+                    if (!foundCloseLocation) {
+                        savedLocationName = "NULL";
+                    }
+
+                    if (!savedLocationName.equals(previousSavedLocationName) || locationNameChanged) {
+                        // Update the notification only if the savedLocationName has changed or if it was just set
+                        updateNotification();
+                        previousSavedLocationName = savedLocationName;
+                    }
                 }
-            }
 
-            if (!foundCloseLocation) {
-                savedLocationName = "NULL";
+                // Set intent extras with the final savedLocationName value
+                intent.putExtra("savedLocationName", savedLocationName);
+                intent.putExtra("distance", distance);
+                long seconds = elapsedMillis / 1000;
+                intent.putExtra("trackingDuration", seconds);
+                intent.putExtra("stepCount", stepDetector.getStepCount());
+                intent.putExtra("caloriesBurned", caloriesBurned);
+                sendBroadcast(intent);
             }
-
-            if (!savedLocationName.equals(previousSavedLocationName) || locationNameChanged) {
-                // Update the notification only if the savedLocationName has changed or if it was just set
-                updateNotification();
-                previousSavedLocationName = savedLocationName;
-            }
-        }
-
-        // Set intent extras with the final savedLocationName value
-        intent.putExtra("savedLocationName", savedLocationName);
-        intent.putExtra("distance", distance);
-        long seconds = elapsedMillis / 1000;
-        intent.putExtra("trackingDuration", seconds);
-        intent.putExtra("stepCount", stepDetector.getStepCount());
-        intent.putExtra("caloriesBurned", caloriesBurned);
-        sendBroadcast(intent);
+        });
     }
 
     /**
@@ -484,19 +372,6 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             return;
         }
         notificationManager.notify(NOTIFICATION_ID, buildNotification());
-    }
-
-    /**
-     * Loads saved locations from the database and initializes the savedLocations list.
-     *
-     * @return A list of SavedLocation objects loaded from the database.
-     */
-    private void loadSavedLocations() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            // Assuming you have a method in your repository to get saved locations synchronously
-            savedLocations = savedLocationRepository.loadSavedLocations().getValue();
-        });
     }
 
     /**
@@ -548,5 +423,11 @@ public class MovementTrackerService extends Service implements StepDetector.Step
             notificationBuilder.setContentText("Your trip is being tracked");
         }
         return notificationBuilder.build();
+    }
+
+    @Override
+    public void onMovementUpdate(double distance, Location location) {
+        // Here you receive the updates. Implement the broadcasting logic here.
+        sendMovementUpdateBroadcast(distance, location);
     }
 }

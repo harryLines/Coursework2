@@ -6,9 +6,13 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /**
  * Repository for managing Trip entities.
  */
+
 public class TripRepository {
     private final TripDao tripDao;
     private final Executor executor;

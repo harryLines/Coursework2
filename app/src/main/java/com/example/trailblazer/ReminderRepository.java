@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /**
  * Repository for managing Reminder entities.
  */
@@ -19,6 +22,7 @@ public class ReminderRepository {
      *
      * @param reminderDao DAO for accessing reminder data.
      */
+
     public ReminderRepository(ReminderDao reminderDao) {
         this.reminderDao = reminderDao;
         this.executor = Executors.newSingleThreadExecutor();

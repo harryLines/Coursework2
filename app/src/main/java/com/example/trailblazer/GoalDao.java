@@ -15,4 +15,7 @@ public interface GoalDao {
     void updateGoals(List<Goal> updatedGoals);
     @Query("SELECT * FROM goals")
     LiveData<List<Goal>> loadGoals();
+    @Query("SELECT * FROM goals")
+    List<Goal> loadGoalsSync();
+
 }

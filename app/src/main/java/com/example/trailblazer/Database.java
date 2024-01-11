@@ -10,7 +10,6 @@ import androidx.room.TypeConverters;
 @androidx.room.Database(entities = {SavedLocation.class, Reminder.class, Trip.class, Goal.class}, version = 27)
 @TypeConverters({Converters.class})
 public abstract class Database extends RoomDatabase {
-
     /**
      * Gets the Data Access Object (DAO) for SavedLocation entities.
      *
