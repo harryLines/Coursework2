@@ -10,16 +10,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
 
-import com.example.trailblazer.HomeFragment;
-import com.example.trailblazer.Trip;
-import com.example.trailblazer.TripDao;
+import com.example.trailblazer.ui.HomeFragment;
+import com.example.trailblazer.data.Trip;
+import com.example.trailblazer.data.TripDao;
 
 public class HomeFragmentUnitTest {
 

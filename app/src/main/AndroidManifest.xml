@@ -28,17 +28,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.Light">
         <activity
-            android:name=".ProfileActivity"
+            android:name=".ui.ProfileActivity"
             android:exported="false" />
 
         <service
-            android:name=".MovementTrackerService"
+            android:name=".domain.MovementTrackerService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="location|dataSync" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -47,7 +47,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SettingsActivity"
+            android:name=".ui.SettingsActivity"
             android:exported="true" />
 
         <meta-data
@@ -55,7 +55,7 @@
             android:value="AIzaSyCrKsxTguyZRaVlFrC9ADqGZbmLKyxctWs" />
 
         <provider
-            android:name=".Provider"
+            android:name=".data.Provider"
             android:authorities="com.example.TrailBlazer.provider"
             android:enabled="true"
             android:exported="true"

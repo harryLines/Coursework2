@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.verify;
 
-import com.example.trailblazer.LoggingFragmentViewModel;
+import com.example.trailblazer.ui.LoggingFragmentViewModel;
 
 public class LoggingFragmentViewModelTest {
 

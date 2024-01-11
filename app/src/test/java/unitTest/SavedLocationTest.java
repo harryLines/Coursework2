@@ -1,13 +1,11 @@
 package unitTest;
 
-import com.example.trailblazer.R;
-import com.example.trailblazer.Reminder;
-import com.example.trailblazer.SavedLocation;
+import com.example.trailblazer.data.Reminder;
+import com.example.trailblazer.data.SavedLocation;
 import com.google.android.gms.maps.model.LatLng;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 

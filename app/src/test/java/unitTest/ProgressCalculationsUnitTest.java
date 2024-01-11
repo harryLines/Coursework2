@@ -1,10 +1,9 @@
 package unitTest;
 
-import static com.example.trailblazer.ProgressCalculations.calculateTotalDistance;
+import static com.example.trailblazer.domain.ProgressCalculations.calculateTotalDistance;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
@@ -13,10 +12,8 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-import com.example.trailblazer.Database;
-import com.example.trailblazer.ProgressCalculations;
-import com.example.trailblazer.ProgressFragment;
-import com.example.trailblazer.Trip;
+import com.example.trailblazer.domain.ProgressCalculations;
+import com.example.trailblazer.data.Trip;
 
 public class ProgressCalculationsUnitTest {
 

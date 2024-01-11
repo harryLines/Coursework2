@@ -3,7 +3,7 @@
     <data>
         <variable
             name="viewModel"
-            type="com.example.trailblazer.HomeFragmentViewModel" />
+            type="com.example.trailblazer.ui.HomeFragmentViewModel" />
     </data>
 
     <LinearLayout
@@ -68,7 +68,7 @@
 
         </LinearLayout>
 
-        <com.example.trailblazer.WeeklyGraphView
+        <com.example.trailblazer.ui.WeeklyGraphView
             android:id="@+id/weeklyGraphViewDistance"
             style="@style/Regular"
             android:layout_width="match_parent"

@@ -1,6 +1,6 @@
 package unitTest;
 
-import com.example.trailblazer.Trip;
+import com.example.trailblazer.data.Trip;
 import com.google.android.gms.maps.model.LatLng;
 
 import org.junit.Test;

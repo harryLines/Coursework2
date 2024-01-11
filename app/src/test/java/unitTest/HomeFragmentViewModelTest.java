@@ -8,15 +8,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.example.trailblazer.HomeFragmentViewModel;
+import com.example.trailblazer.ui.HomeFragmentViewModel;
 
 public class HomeFragmentViewModelTest {
 

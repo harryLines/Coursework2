@@ -10,7 +10,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
@@ -21,11 +20,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.example.trailblazer.Goal;
-import com.example.trailblazer.GoalsFragmentViewModel;
+import com.example.trailblazer.data.Goal;
+import com.example.trailblazer.ui.GoalsFragmentViewModel;
 
 public class GoalsFragmentViewModelTest {
     @Rule

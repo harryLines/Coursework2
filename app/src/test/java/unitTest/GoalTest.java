@@ -7,7 +7,7 @@ import java.util.Date;
 
 import static org.junit.Assert.*;
 
-import com.example.trailblazer.Goal;
+import com.example.trailblazer.data.Goal;
 
 public class GoalTest {
 
